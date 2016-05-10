@@ -6,58 +6,65 @@ Elm.Counter.make = function (_elm) {
    var _U = Elm.Native.Utils.make(_elm),
    $Basics = Elm.Basics.make(_elm),
    $Date = Elm.Date.make(_elm),
+   $Date$Extra$Core = Elm.Date.Extra.Core.make(_elm),
+   $Date$Extra$Utils = Elm.Date.Extra.Utils.make(_elm),
    $Debug = Elm.Debug.make(_elm),
    $Html = Elm.Html.make(_elm),
    $Html$Attributes = Elm.Html.Attributes.make(_elm),
    $List = Elm.List.make(_elm),
    $Maybe = Elm.Maybe.make(_elm),
    $Result = Elm.Result.make(_elm),
-   $Signal = Elm.Signal.make(_elm),
-   $Time = Elm.Time.make(_elm);
+   $Signal = Elm.Signal.make(_elm);
    var _op = {};
-   var countStyle = $Html$Attributes.style(_U.list([{ctor: "_Tuple2",_0: "font-size",_1: "20px"}
-                                                   ,{ctor: "_Tuple2",_0: "font-family",_1: "monospace"}
-                                                   ,{ctor: "_Tuple2",_0: "display",_1: "inline-block"}
-                                                   ,{ctor: "_Tuple2",_0: "width",_1: "50px"}
-                                                   ,{ctor: "_Tuple2",_0: "text-align",_1: "center"}]));
-   var createCalendarDay = function (day) {    return A2($Html.td,_U.list([]),_U.list([$Html.text($Basics.toString(day))]));};
-   var layoutLastWeek = function (date) {    return A2($Html.tr,_U.list([]),_U.list([]));};
-   var layoutFirstWeek = function (date) {    return A2($Html.tr,_U.list([]),_U.list([]));};
-   var secondsInWeek = 7 * 24 * 60 * 60;
-   var incrementByWeek = function (date) {    return $Date.fromTime($Time.inSeconds($Date.toTime(date)) + secondsInWeek);};
-   var layoutWeek = function (date) {
-      return _U.eq($Date.day(date),1) ? layoutFirstWeek(date) : !_U.eq($Date.month(incrementByWeek(date)),
-      $Date.month(date)) ? layoutLastWeek(date) : A2($Html.tr,_U.list([]),A2($List.map,createCalendarDay,_U.range($Date.day(date),$Date.day(date) + 6)));
+   var firstWeekOfMonth = function (date) {
+      var days = A2($Date$Extra$Core.daysBackToStartOfWeek,$Date.Sun,$Date.dayOfWeek($Date$Extra$Core.toFirstOfMonth(date)));
+      return _U.range(1,days);
+   };
+   var lastWeekOfMonth = function (date) {
+      var daysInMonth = $Date$Extra$Core.daysInMonthDate(date);
+      var days = A2($Date$Extra$Core.daysBackToStartOfWeek,$Date.dayOfWeek($Date$Extra$Core.lastOfMonthDate(date)),$Date.Sun);
+      return _U.range(daysInMonth - days,daysInMonth);
+   };
+   var viewDays = F2(function (days,isExternal) {
+      return A2($List.map,
+      $Html.td(_U.list([$Html$Attributes.classList(_U.list([{ctor: "_Tuple2",_0: "other-month",_1: isExternal}]))])),
+      A2($List.map,$List.repeat(1),A2($List.map,$Html.text,A2($List.map,$Basics.toString,days))));
+   });
+   var splitWeeks = function (days) {
+      if (_U.eq($List.length(days),0)) return _U.list([]); else {
+            var remainingDays = A2($List.drop,7,days);
+            var thisWeek = A2($List.repeat,1,A2($List.take,7,days));
+            return A2($List.append,thisWeek,splitWeeks(remainingDays));
+         }
+   };
+   var viewMonth = function (date) {
+      var nextDays = lastWeekOfMonth($Date$Extra$Core.lastOfPrevMonthDate(date));
+      var currentDays = _U.range(1,$Date$Extra$Core.daysInMonthDate(date));
+      var previousDays = firstWeekOfMonth($Date$Extra$Core.firstOfNextMonthDate(date));
+      return A2($List.map,
+      $Html.tr(_U.list([])),
+      splitWeeks(A2($List.append,A2(viewDays,nextDays,true),A2($List.append,A2(viewDays,currentDays,false),A2(viewDays,previousDays,true)))));
    };
    var view = F2(function (address,model) {
-      return A2($Html.table,
+      var header = A2($Html.thead,
       _U.list([]),
-      _U.list([A2($Html.thead,
-              _U.list([]),
-              _U.list([A2($Html.tr,
-              _U.list([]),
-              _U.list([A2($Html.th,_U.list([]),_U.list([$Html.text("S")]))
-                      ,A2($Html.th,_U.list([]),_U.list([$Html.text("M")]))
-                      ,A2($Html.th,_U.list([]),_U.list([$Html.text("T")]))
-                      ,A2($Html.th,_U.list([]),_U.list([$Html.text("W")]))
-                      ,A2($Html.th,_U.list([]),_U.list([$Html.text("T")]))
-                      ,A2($Html.th,_U.list([]),_U.list([$Html.text("F")]))
-                      ,A2($Html.th,_U.list([]),_U.list([$Html.text("S")]))]))]))
-              ,layoutWeek($Date.fromTime(2.0e8))]));
+      A2($List.map,$Html.th(_U.list([])),A2($List.map,$List.repeat(1),A2($List.map,$Html.text,_U.list(["S","M","T","W","T","F","S"])))));
+      var other = A2($Debug.log,"Address",address);
+      return A2($Html.table,_U.list([]),A2($List._op["::"],header,viewMonth($Date$Extra$Utils.unsafeFromString("January, 1, 2016"))));
    });
-   var update = F2(function (action,model) {    var _p0 = action;if (_p0.ctor === "Increment") {    return model + 1;} else {    return model - 1;}});
    var Decrement = {ctor: "Decrement"};
    var Increment = {ctor: "Increment"};
+   var emptyModel = {uid: 0,name: ""};
+   var Model = F2(function (a,b) {    return {uid: a,name: b};});
    return _elm.Counter.values = {_op: _op
+                                ,Model: Model
+                                ,emptyModel: emptyModel
                                 ,Increment: Increment
                                 ,Decrement: Decrement
-                                ,update: update
                                 ,view: view
-                                ,secondsInWeek: secondsInWeek
-                                ,layoutWeek: layoutWeek
-                                ,layoutFirstWeek: layoutFirstWeek
-                                ,layoutLastWeek: layoutLastWeek
-                                ,createCalendarDay: createCalendarDay
-                                ,incrementByWeek: incrementByWeek
-                                ,countStyle: countStyle};
+                                ,splitWeeks: splitWeeks
+                                ,viewDays: viewDays
+                                ,viewMonth: viewMonth
+                                ,lastWeekOfMonth: lastWeekOfMonth
+                                ,firstWeekOfMonth: firstWeekOfMonth};
 };

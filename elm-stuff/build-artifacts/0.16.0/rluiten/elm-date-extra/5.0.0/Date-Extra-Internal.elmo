@@ -1,0 +1,83 @@
+Elm.Date = Elm.Date || {};
+Elm.Date.Extra = Elm.Date.Extra || {};
+Elm.Date.Extra.Internal = Elm.Date.Extra.Internal || {};
+Elm.Date.Extra.Internal.make = function (_elm) {
+   "use strict";
+   _elm.Date = _elm.Date || {};
+   _elm.Date.Extra = _elm.Date.Extra || {};
+   _elm.Date.Extra.Internal = _elm.Date.Extra.Internal || {};
+   if (_elm.Date.Extra.Internal.values) return _elm.Date.Extra.Internal.values;
+   var _U = Elm.Native.Utils.make(_elm),
+   $Basics = Elm.Basics.make(_elm),
+   $Date = Elm.Date.make(_elm),
+   $Date$Extra$Core = Elm.Date.Extra.Core.make(_elm),
+   $Date$Extra$Period = Elm.Date.Extra.Period.make(_elm),
+   $Debug = Elm.Debug.make(_elm),
+   $List = Elm.List.make(_elm),
+   $Maybe = Elm.Maybe.make(_elm),
+   $Result = Elm.Result.make(_elm),
+   $Signal = Elm.Signal.make(_elm);
+   var _op = {};
+   var daysFromCivil = F3(function (year,month,day) {
+      var doy = ((153 * (month + (_U.cmp(month,2) > 0 ? -3 : 9)) + 2) / 5 | 0) + day - 1;
+      var y = year - (_U.cmp(month,2) < 1 ? 1 : 0);
+      var era = (_U.cmp(y,0) > -1 ? y : y - 399) / 400 | 0;
+      var yoe = y - era * 400;
+      var doe = yoe * 365 + (yoe / 4 | 0) - (yoe / 100 | 0) + doy;
+      return era * 146097 + doe - 719468;
+   });
+   var ticksFromFields = F7(function (year,month,day,hour,minute,second,millisecond) {
+      var monthInt = $Date$Extra$Core.monthToInt(month);
+      var c_year = _U.cmp(year,0) < 0 ? 0 : year;
+      var c_day = A3($Basics.clamp,1,A2($Date$Extra$Core.daysInMonth,c_year,month),day);
+      var dayCount = A3(daysFromCivil,c_year,monthInt,c_day);
+      return $Date$Extra$Period.toTicks($Date$Extra$Period.Delta({millisecond: A3($Basics.clamp,0,999,millisecond)
+                                                                 ,second: A3($Basics.clamp,0,59,second)
+                                                                 ,minute: A3($Basics.clamp,0,59,minute)
+                                                                 ,hour: A3($Basics.clamp,0,23,hour)
+                                                                 ,day: dayCount
+                                                                 ,week: 0}));
+   });
+   var ticksFromDateFields = function (date) {
+      return A7(ticksFromFields,
+      $Date.year(date),
+      $Date.month(date),
+      $Date.day(date),
+      $Date.hour(date),
+      $Date.minute(date),
+      $Date.second(date),
+      $Date.millisecond(date));
+   };
+   var getTimezoneOffset = function (date) {
+      var v1Ticks = ticksFromDateFields(date);
+      var dateTicks = $Basics.floor($Date.toTime(date));
+      return (dateTicks - v1Ticks) / $Date$Extra$Core.ticksAMinute | 0;
+   };
+   var hackDateAsOffset = F2(function (offsetMinutes,date) {
+      return $Date$Extra$Core.fromTime(A2(F2(function (x,y) {    return x + y;}),offsetMinutes * $Date$Extra$Core.ticksAMinute,$Date$Extra$Core.toTime(date)));
+   });
+   var hackDateAsUtc = function (date) {
+      var offset = getTimezoneOffset(date);
+      var oHours = offset / $Date$Extra$Core.ticksAnHour | 0;
+      var oMinutes = (offset - oHours * $Date$Extra$Core.ticksAnHour) / $Date$Extra$Core.ticksAMinute | 0;
+      var _p0 = A2($Debug.log,"hackDateAsUtc",{ctor: "_Tuple3",_0: offset,_1: oHours,_2: oMinutes});
+      var _p1 = A2($Debug.log,
+      "(local  date) fields",
+      {ctor: "_Tuple7"
+      ,_0: $Date.year(date)
+      ,_1: $Date.month(date)
+      ,_2: $Date.day(date)
+      ,_3: $Date.hour(date)
+      ,_4: $Date.minute(date)
+      ,_5: $Date.second(date)
+      ,_6: $Date.millisecond(date)});
+      return A2(hackDateAsOffset,offset,date);
+   };
+   return _elm.Date.Extra.Internal.values = {_op: _op
+                                            ,hackDateAsUtc: hackDateAsUtc
+                                            ,hackDateAsOffset: hackDateAsOffset
+                                            ,daysFromCivil: daysFromCivil
+                                            ,getTimezoneOffset: getTimezoneOffset
+                                            ,ticksFromDateFields: ticksFromDateFields
+                                            ,ticksFromFields: ticksFromFields};
+};

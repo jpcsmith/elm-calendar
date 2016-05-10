@@ -8395,6 +8395,165 @@ Elm.Date.make = function (_elm) {
                              ,Sat: Sat
                              ,Sun: Sun};
 };
+Elm.Native.Regex = {};
+Elm.Native.Regex.make = function(localRuntime) {
+	localRuntime.Native = localRuntime.Native || {};
+	localRuntime.Native.Regex = localRuntime.Native.Regex || {};
+	if (localRuntime.Native.Regex.values)
+	{
+		return localRuntime.Native.Regex.values;
+	}
+	if ('values' in Elm.Native.Regex)
+	{
+		return localRuntime.Native.Regex.values = Elm.Native.Regex.values;
+	}
+
+	var List = Elm.Native.List.make(localRuntime);
+	var Maybe = Elm.Maybe.make(localRuntime);
+
+	function escape(str)
+	{
+		return str.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+	}
+	function caseInsensitive(re)
+	{
+		return new RegExp(re.source, 'gi');
+	}
+	function regex(raw)
+	{
+		return new RegExp(raw, 'g');
+	}
+
+	function contains(re, string)
+	{
+		return string.match(re) !== null;
+	}
+
+	function find(n, re, str)
+	{
+		n = n.ctor === 'All' ? Infinity : n._0;
+		var out = [];
+		var number = 0;
+		var string = str;
+		var lastIndex = re.lastIndex;
+		var prevLastIndex = -1;
+		var result;
+		while (number++ < n && (result = re.exec(string)))
+		{
+			if (prevLastIndex === re.lastIndex) break;
+			var i = result.length - 1;
+			var subs = new Array(i);
+			while (i > 0)
+			{
+				var submatch = result[i];
+				subs[--i] = submatch === undefined
+					? Maybe.Nothing
+					: Maybe.Just(submatch);
+			}
+			out.push({
+				match: result[0],
+				submatches: List.fromArray(subs),
+				index: result.index,
+				number: number
+			});
+			prevLastIndex = re.lastIndex;
+		}
+		re.lastIndex = lastIndex;
+		return List.fromArray(out);
+	}
+
+	function replace(n, re, replacer, string)
+	{
+		n = n.ctor === 'All' ? Infinity : n._0;
+		var count = 0;
+		function jsReplacer(match)
+		{
+			if (count++ >= n)
+			{
+				return match;
+			}
+			var i = arguments.length - 3;
+			var submatches = new Array(i);
+			while (i > 0)
+			{
+				var submatch = arguments[i];
+				submatches[--i] = submatch === undefined
+					? Maybe.Nothing
+					: Maybe.Just(submatch);
+			}
+			return replacer({
+				match: match,
+				submatches: List.fromArray(submatches),
+				index: arguments[i - 1],
+				number: count
+			});
+		}
+		return string.replace(re, jsReplacer);
+	}
+
+	function split(n, re, str)
+	{
+		n = n.ctor === 'All' ? Infinity : n._0;
+		if (n === Infinity)
+		{
+			return List.fromArray(str.split(re));
+		}
+		var string = str;
+		var result;
+		var out = [];
+		var start = re.lastIndex;
+		while (n--)
+		{
+			if (!(result = re.exec(string))) break;
+			out.push(string.slice(start, result.index));
+			start = re.lastIndex;
+		}
+		out.push(string.slice(start));
+		return List.fromArray(out);
+	}
+
+	return Elm.Native.Regex.values = {
+		regex: regex,
+		caseInsensitive: caseInsensitive,
+		escape: escape,
+
+		contains: F2(contains),
+		find: F3(find),
+		replace: F4(replace),
+		split: F3(split)
+	};
+};
+
+Elm.Regex = Elm.Regex || {};
+Elm.Regex.make = function (_elm) {
+   "use strict";
+   _elm.Regex = _elm.Regex || {};
+   if (_elm.Regex.values) return _elm.Regex.values;
+   var _U = Elm.Native.Utils.make(_elm),$Maybe = Elm.Maybe.make(_elm),$Native$Regex = Elm.Native.Regex.make(_elm);
+   var _op = {};
+   var split = $Native$Regex.split;
+   var replace = $Native$Regex.replace;
+   var find = $Native$Regex.find;
+   var AtMost = function (a) {    return {ctor: "AtMost",_0: a};};
+   var All = {ctor: "All"};
+   var Match = F4(function (a,b,c,d) {    return {match: a,submatches: b,index: c,number: d};});
+   var contains = $Native$Regex.contains;
+   var caseInsensitive = $Native$Regex.caseInsensitive;
+   var regex = $Native$Regex.regex;
+   var escape = $Native$Regex.escape;
+   var Regex = {ctor: "Regex"};
+   return _elm.Regex.values = {_op: _op
+                              ,regex: regex
+                              ,escape: escape
+                              ,caseInsensitive: caseInsensitive
+                              ,contains: contains
+                              ,find: find
+                              ,replace: replace
+                              ,split: split
+                              ,Match: Match
+                              ,All: All
+                              ,AtMost: AtMost};
+};
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 
 },{}],2:[function(require,module,exports){
@@ -10585,68 +10744,1139 @@ Elm.StartApp.Simple.make = function (_elm) {
    var Config = F3(function (a,b,c) {    return {model: a,view: b,update: c};});
    return _elm.StartApp.Simple.values = {_op: _op,Config: Config,start: start};
 };
-Elm.Counter = Elm.Counter || {};
-Elm.Counter.make = function (_elm) {
+Elm.Date = Elm.Date || {};
+Elm.Date.Extra = Elm.Date.Extra || {};
+Elm.Date.Extra.Core = Elm.Date.Extra.Core || {};
+Elm.Date.Extra.Core.make = function (_elm) {
    "use strict";
-   _elm.Counter = _elm.Counter || {};
-   if (_elm.Counter.values) return _elm.Counter.values;
+   _elm.Date = _elm.Date || {};
+   _elm.Date.Extra = _elm.Date.Extra || {};
+   _elm.Date.Extra.Core = _elm.Date.Extra.Core || {};
+   if (_elm.Date.Extra.Core.values) return _elm.Date.Extra.Core.values;
    var _U = Elm.Native.Utils.make(_elm),
    $Basics = Elm.Basics.make(_elm),
    $Date = Elm.Date.make(_elm),
    $Debug = Elm.Debug.make(_elm),
-   $Html = Elm.Html.make(_elm),
-   $Html$Attributes = Elm.Html.Attributes.make(_elm),
    $List = Elm.List.make(_elm),
    $Maybe = Elm.Maybe.make(_elm),
    $Result = Elm.Result.make(_elm),
    $Signal = Elm.Signal.make(_elm),
    $Time = Elm.Time.make(_elm);
    var _op = {};
-   var countStyle = $Html$Attributes.style(_U.list([{ctor: "_Tuple2",_0: "font-size",_1: "20px"}
-                                                   ,{ctor: "_Tuple2",_0: "font-family",_1: "monospace"}
-                                                   ,{ctor: "_Tuple2",_0: "display",_1: "inline-block"}
-                                                   ,{ctor: "_Tuple2",_0: "width",_1: "50px"}
-                                                   ,{ctor: "_Tuple2",_0: "text-align",_1: "center"}]));
-   var createCalendarDay = function (day) {    return A2($Html.td,_U.list([]),_U.list([$Html.text($Basics.toString(day))]));};
-   var layoutLastWeek = function (date) {    return A2($Html.tr,_U.list([]),_U.list([]));};
-   var layoutFirstWeek = function (date) {    return A2($Html.tr,_U.list([]),_U.list([]));};
-   var secondsInWeek = 7 * 24 * 60 * 60;
-   var incrementByWeek = function (date) {    return $Date.fromTime($Time.inSeconds($Date.toTime(date)) + secondsInWeek);};
-   var layoutWeek = function (date) {
-      return _U.eq($Date.day(date),1) ? layoutFirstWeek(date) : !_U.eq($Date.month(incrementByWeek(date)),
-      $Date.month(date)) ? layoutLastWeek(date) : A2($Html.tr,_U.list([]),A2($List.map,createCalendarDay,_U.range($Date.day(date),$Date.day(date) + 6)));
+   var prevMonth = function (month) {
+      var _p0 = month;
+      switch (_p0.ctor)
+      {case "Jan": return $Date.Dec;
+         case "Feb": return $Date.Jan;
+         case "Mar": return $Date.Feb;
+         case "Apr": return $Date.Mar;
+         case "May": return $Date.Apr;
+         case "Jun": return $Date.May;
+         case "Jul": return $Date.Jun;
+         case "Aug": return $Date.Jul;
+         case "Sep": return $Date.Aug;
+         case "Oct": return $Date.Sep;
+         case "Nov": return $Date.Oct;
+         default: return $Date.Nov;}
+   };
+   var nextMonth = function (month) {
+      var _p1 = month;
+      switch (_p1.ctor)
+      {case "Jan": return $Date.Feb;
+         case "Feb": return $Date.Mar;
+         case "Mar": return $Date.Apr;
+         case "Apr": return $Date.May;
+         case "May": return $Date.Jun;
+         case "Jun": return $Date.Jul;
+         case "Jul": return $Date.Aug;
+         case "Aug": return $Date.Sep;
+         case "Sep": return $Date.Oct;
+         case "Oct": return $Date.Nov;
+         case "Nov": return $Date.Dec;
+         default: return $Date.Jan;}
+   };
+   var intToMonth = function (month) {
+      return _U.cmp(month,1) < 1 ? $Date.Jan : _U.eq(month,2) ? $Date.Feb : _U.eq(month,3) ? $Date.Mar : _U.eq(month,4) ? $Date.Apr : _U.eq(month,
+      5) ? $Date.May : _U.eq(month,6) ? $Date.Jun : _U.eq(month,7) ? $Date.Jul : _U.eq(month,8) ? $Date.Aug : _U.eq(month,9) ? $Date.Sep : _U.eq(month,
+      10) ? $Date.Oct : _U.eq(month,11) ? $Date.Nov : $Date.Dec;
+   };
+   var monthToInt = function (month) {
+      var _p2 = month;
+      switch (_p2.ctor)
+      {case "Jan": return 1;
+         case "Feb": return 2;
+         case "Mar": return 3;
+         case "Apr": return 4;
+         case "May": return 5;
+         case "Jun": return 6;
+         case "Jul": return 7;
+         case "Aug": return 8;
+         case "Sep": return 9;
+         case "Oct": return 10;
+         case "Nov": return 11;
+         default: return 12;}
+   };
+   var isLeapYear = function (year) {
+      return _U.eq(A2($Basics._op["%"],year,4),0) && !_U.eq(A2($Basics._op["%"],year,100),0) || _U.eq(A2($Basics._op["%"],year,400),0);
+   };
+   var isLeapYearDate = function (date) {    return isLeapYear($Date.year(date));};
+   var yearToDayLength = function (year) {    return isLeapYear(year) ? 366 : 365;};
+   var daysInMonth = F2(function (year,month) {
+      var _p3 = month;
+      switch (_p3.ctor)
+      {case "Jan": return 31;
+         case "Feb": return isLeapYear(year) ? 29 : 28;
+         case "Mar": return 31;
+         case "Apr": return 30;
+         case "May": return 31;
+         case "Jun": return 30;
+         case "Jul": return 31;
+         case "Aug": return 31;
+         case "Sep": return 30;
+         case "Oct": return 31;
+         case "Nov": return 30;
+         default: return 31;}
+   });
+   var daysInMonthDate = function (date) {    return A2(daysInMonth,$Date.year(date),$Date.month(date));};
+   var monthList = _U.list([$Date.Jan,$Date.Feb,$Date.Mar,$Date.Apr,$Date.May,$Date.Jun,$Date.Jul,$Date.Aug,$Date.Sep,$Date.Oct,$Date.Nov,$Date.Dec]);
+   var toTime = function (_p4) {    return $Basics.floor($Date.toTime(_p4));};
+   var fromTime = function (_p5) {    return $Date.fromTime($Basics.toFloat(_p5));};
+   var prevDay = function (day) {
+      var _p6 = day;
+      switch (_p6.ctor)
+      {case "Mon": return $Date.Sun;
+         case "Tue": return $Date.Mon;
+         case "Wed": return $Date.Tue;
+         case "Thu": return $Date.Wed;
+         case "Fri": return $Date.Thu;
+         case "Sat": return $Date.Fri;
+         default: return $Date.Sat;}
+   };
+   var nextDay = function (day) {
+      var _p7 = day;
+      switch (_p7.ctor)
+      {case "Mon": return $Date.Tue;
+         case "Tue": return $Date.Wed;
+         case "Wed": return $Date.Thu;
+         case "Thu": return $Date.Fri;
+         case "Fri": return $Date.Sat;
+         case "Sat": return $Date.Sun;
+         default: return $Date.Mon;}
+   };
+   var isoDayOfWeek = function (day) {
+      var _p8 = day;
+      switch (_p8.ctor)
+      {case "Mon": return 1;
+         case "Tue": return 2;
+         case "Wed": return 3;
+         case "Thu": return 4;
+         case "Fri": return 5;
+         case "Sat": return 6;
+         default: return 7;}
+   };
+   var daysBackToStartOfWeek = F2(function (dateDay,startOfWeekDay) {
+      var startOfWeekDayIndex = isoDayOfWeek(startOfWeekDay);
+      var dateDayIndex = isoDayOfWeek(dateDay);
+      return _U.cmp(dateDayIndex,startOfWeekDayIndex) < 0 ? 7 + dateDayIndex - startOfWeekDayIndex : dateDayIndex - startOfWeekDayIndex;
+   });
+   var ticksAMillisecond = $Basics.floor($Time.millisecond);
+   var ticksASecond = ticksAMillisecond * 1000;
+   var ticksAMinute = ticksASecond * 60;
+   var ticksAnHour = ticksAMinute * 60;
+   var ticksADay = ticksAnHour * 24;
+   var ticksAWeek = ticksADay * 7;
+   var firstOfMonthTicks = function (date) {    var dateTicks = toTime(date);var day = $Date.day(date);return dateTicks + (1 - day) * ticksADay;};
+   var lastOfPrevMonthDate = function (date) {    return fromTime(firstOfMonthTicks(date) - ticksADay);};
+   var daysInPrevMonth = function (date) {    return daysInMonthDate(lastOfPrevMonthDate(date));};
+   var toFirstOfMonth = function (date) {    return fromTime(firstOfMonthTicks(date));};
+   var lastOfMonthTicks = function (date) {
+      var dateTicks = toTime(date);
+      var day = $Date.day(date);
+      var month = $Date.month(date);
+      var year = $Date.year(date);
+      var daysInMonthVal = A2(daysInMonth,year,month);
+      var addDays = daysInMonthVal - day;
+      return dateTicks + addDays * ticksADay;
+   };
+   var firstOfNextMonthDate = function (date) {    return fromTime(lastOfMonthTicks(date) + ticksADay);};
+   var daysInNextMonth = function (date) {    return daysInMonthDate(firstOfNextMonthDate(date));};
+   var lastOfMonthDate = function (date) {    return fromTime(lastOfMonthTicks(date));};
+   var epochDateStr = "1970-01-01T00:00:00Z";
+   return _elm.Date.Extra.Core.values = {_op: _op
+                                        ,daysInMonth: daysInMonth
+                                        ,daysInNextMonth: daysInNextMonth
+                                        ,daysInPrevMonth: daysInPrevMonth
+                                        ,daysInMonthDate: daysInMonthDate
+                                        ,daysBackToStartOfWeek: daysBackToStartOfWeek
+                                        ,epochDateStr: epochDateStr
+                                        ,firstOfNextMonthDate: firstOfNextMonthDate
+                                        ,fromTime: fromTime
+                                        ,intToMonth: intToMonth
+                                        ,isLeapYear: isLeapYear
+                                        ,isLeapYearDate: isLeapYearDate
+                                        ,isoDayOfWeek: isoDayOfWeek
+                                        ,lastOfMonthDate: lastOfMonthDate
+                                        ,lastOfPrevMonthDate: lastOfPrevMonthDate
+                                        ,monthList: monthList
+                                        ,monthToInt: monthToInt
+                                        ,nextDay: nextDay
+                                        ,nextMonth: nextMonth
+                                        ,prevDay: prevDay
+                                        ,prevMonth: prevMonth
+                                        ,ticksAnHour: ticksAnHour
+                                        ,ticksADay: ticksADay
+                                        ,ticksAMillisecond: ticksAMillisecond
+                                        ,ticksAMinute: ticksAMinute
+                                        ,ticksASecond: ticksASecond
+                                        ,ticksAWeek: ticksAWeek
+                                        ,toFirstOfMonth: toFirstOfMonth
+                                        ,toTime: toTime
+                                        ,yearToDayLength: yearToDayLength};
+};
+Elm.Date = Elm.Date || {};
+Elm.Date.Extra = Elm.Date.Extra || {};
+Elm.Date.Extra.Compare = Elm.Date.Extra.Compare || {};
+Elm.Date.Extra.Compare.make = function (_elm) {
+   "use strict";
+   _elm.Date = _elm.Date || {};
+   _elm.Date.Extra = _elm.Date.Extra || {};
+   _elm.Date.Extra.Compare = _elm.Date.Extra.Compare || {};
+   if (_elm.Date.Extra.Compare.values) return _elm.Date.Extra.Compare.values;
+   var _U = Elm.Native.Utils.make(_elm),
+   $Basics = Elm.Basics.make(_elm),
+   $Date = Elm.Date.make(_elm),
+   $Date$Extra$Core = Elm.Date.Extra.Core.make(_elm),
+   $Debug = Elm.Debug.make(_elm),
+   $List = Elm.List.make(_elm),
+   $Maybe = Elm.Maybe.make(_elm),
+   $Result = Elm.Result.make(_elm),
+   $Signal = Elm.Signal.make(_elm);
+   var _op = {};
+   var is3 = F4(function (comp,date1,date2,date3) {
+      var time3 = $Date$Extra$Core.toTime(date3);
+      var time2 = $Date$Extra$Core.toTime(date2);
+      var highBound = A2($Basics.max,time2,time3);
+      var lowBound = A2($Basics.min,time2,time3);
+      var time1 = $Date$Extra$Core.toTime(date1);
+      var _p0 = comp;
+      switch (_p0.ctor)
+      {case "Between": return _U.cmp(time1,lowBound) > 0 && _U.cmp(time1,highBound) < 0;
+         case "BetweenOpenStart": return _U.cmp(time1,lowBound) > -1 && _U.cmp(time1,highBound) < 0;
+         case "BetweenOpenEnd": return _U.cmp(time1,lowBound) > 0 && _U.cmp(time1,highBound) < 1;
+         default: return _U.cmp(time1,lowBound) > -1 && _U.cmp(time1,highBound) < 1;}
+   });
+   var is = F3(function (comp,date1,date2) {
+      var time2 = $Date$Extra$Core.toTime(date2);
+      var time1 = $Date$Extra$Core.toTime(date1);
+      var _p1 = comp;
+      switch (_p1.ctor)
+      {case "Before": return _U.cmp(time1,time2) < 0;
+         case "After": return _U.cmp(time1,time2) > 0;
+         case "Same": return _U.eq(time1,time2);
+         case "SameOrBefore": return _U.cmp(time1,time2) < 1;
+         default: return _U.cmp(time1,time2) > -1;}
+   });
+   var BetweenOpen = {ctor: "BetweenOpen"};
+   var BetweenOpenEnd = {ctor: "BetweenOpenEnd"};
+   var BetweenOpenStart = {ctor: "BetweenOpenStart"};
+   var Between = {ctor: "Between"};
+   var SameOrBefore = {ctor: "SameOrBefore"};
+   var SameOrAfter = {ctor: "SameOrAfter"};
+   var Same = {ctor: "Same"};
+   var Before = {ctor: "Before"};
+   var After = {ctor: "After"};
+   return _elm.Date.Extra.Compare.values = {_op: _op
+                                           ,is: is
+                                           ,is3: is3
+                                           ,After: After
+                                           ,Before: Before
+                                           ,Same: Same
+                                           ,SameOrAfter: SameOrAfter
+                                           ,SameOrBefore: SameOrBefore
+                                           ,Between: Between
+                                           ,BetweenOpenStart: BetweenOpenStart
+                                           ,BetweenOpenEnd: BetweenOpenEnd
+                                           ,BetweenOpen: BetweenOpen};
+};
+Elm.Date = Elm.Date || {};
+Elm.Date.Extra = Elm.Date.Extra || {};
+Elm.Date.Extra.Config = Elm.Date.Extra.Config || {};
+Elm.Date.Extra.Config.make = function (_elm) {
+   "use strict";
+   _elm.Date = _elm.Date || {};
+   _elm.Date.Extra = _elm.Date.Extra || {};
+   _elm.Date.Extra.Config = _elm.Date.Extra.Config || {};
+   if (_elm.Date.Extra.Config.values) return _elm.Date.Extra.Config.values;
+   var _U = Elm.Native.Utils.make(_elm),
+   $Basics = Elm.Basics.make(_elm),
+   $Date = Elm.Date.make(_elm),
+   $Debug = Elm.Debug.make(_elm),
+   $List = Elm.List.make(_elm),
+   $Maybe = Elm.Maybe.make(_elm),
+   $Result = Elm.Result.make(_elm),
+   $Signal = Elm.Signal.make(_elm);
+   var _op = {};
+   var Config = F2(function (a,b) {    return {i18n: a,format: b};});
+   return _elm.Date.Extra.Config.values = {_op: _op,Config: Config};
+};
+Elm.Date = Elm.Date || {};
+Elm.Date.Extra = Elm.Date.Extra || {};
+Elm.Date.Extra.I18n = Elm.Date.Extra.I18n || {};
+Elm.Date.Extra.I18n.I_en_us = Elm.Date.Extra.I18n.I_en_us || {};
+Elm.Date.Extra.I18n.I_en_us.make = function (_elm) {
+   "use strict";
+   _elm.Date = _elm.Date || {};
+   _elm.Date.Extra = _elm.Date.Extra || {};
+   _elm.Date.Extra.I18n = _elm.Date.Extra.I18n || {};
+   _elm.Date.Extra.I18n.I_en_us = _elm.Date.Extra.I18n.I_en_us || {};
+   if (_elm.Date.Extra.I18n.I_en_us.values) return _elm.Date.Extra.I18n.I_en_us.values;
+   var _U = Elm.Native.Utils.make(_elm),
+   $Basics = Elm.Basics.make(_elm),
+   $Date = Elm.Date.make(_elm),
+   $Debug = Elm.Debug.make(_elm),
+   $List = Elm.List.make(_elm),
+   $Maybe = Elm.Maybe.make(_elm),
+   $Result = Elm.Result.make(_elm),
+   $Signal = Elm.Signal.make(_elm);
+   var _op = {};
+   var monthName = function (month) {
+      var _p0 = month;
+      switch (_p0.ctor)
+      {case "Jan": return "January";
+         case "Feb": return "February";
+         case "Mar": return "March";
+         case "Apr": return "April";
+         case "May": return "May";
+         case "Jun": return "June";
+         case "Jul": return "July";
+         case "Aug": return "August";
+         case "Sep": return "September";
+         case "Oct": return "October";
+         case "Nov": return "November";
+         default: return "December";}
+   };
+   var monthShort = function (month) {
+      var _p1 = month;
+      switch (_p1.ctor)
+      {case "Jan": return "Jan";
+         case "Feb": return "Feb";
+         case "Mar": return "Mar";
+         case "Apr": return "Apr";
+         case "May": return "May";
+         case "Jun": return "Jun";
+         case "Jul": return "Jul";
+         case "Aug": return "Aug";
+         case "Sep": return "Sep";
+         case "Oct": return "Oct";
+         case "Nov": return "Nov";
+         default: return "Dec";}
+   };
+   var dayName = function (day) {
+      var _p2 = day;
+      switch (_p2.ctor)
+      {case "Mon": return "Monday";
+         case "Tue": return "Tuesday";
+         case "Wed": return "Wednesday";
+         case "Thu": return "Thursday";
+         case "Fri": return "Friday";
+         case "Sat": return "Saturday";
+         default: return "Sunday";}
+   };
+   var dayShort = function (day) {
+      var _p3 = day;
+      switch (_p3.ctor)
+      {case "Mon": return "Mon";
+         case "Tue": return "Tue";
+         case "Wed": return "Wed";
+         case "Thu": return "Thu";
+         case "Fri": return "Fri";
+         case "Sat": return "Sat";
+         default: return "Sun";}
+   };
+   return _elm.Date.Extra.I18n.I_en_us.values = {_op: _op,dayShort: dayShort,dayName: dayName,monthShort: monthShort,monthName: monthName};
+};
+Elm.Date = Elm.Date || {};
+Elm.Date.Extra = Elm.Date.Extra || {};
+Elm.Date.Extra.Config = Elm.Date.Extra.Config || {};
+Elm.Date.Extra.Config.Config_en_us = Elm.Date.Extra.Config.Config_en_us || {};
+Elm.Date.Extra.Config.Config_en_us.make = function (_elm) {
+   "use strict";
+   _elm.Date = _elm.Date || {};
+   _elm.Date.Extra = _elm.Date.Extra || {};
+   _elm.Date.Extra.Config = _elm.Date.Extra.Config || {};
+   _elm.Date.Extra.Config.Config_en_us = _elm.Date.Extra.Config.Config_en_us || {};
+   if (_elm.Date.Extra.Config.Config_en_us.values) return _elm.Date.Extra.Config.Config_en_us.values;
+   var _U = Elm.Native.Utils.make(_elm),
+   $Basics = Elm.Basics.make(_elm),
+   $Date = Elm.Date.make(_elm),
+   $Date$Extra$Config = Elm.Date.Extra.Config.make(_elm),
+   $Date$Extra$I18n$I_en_us = Elm.Date.Extra.I18n.I_en_us.make(_elm),
+   $Debug = Elm.Debug.make(_elm),
+   $List = Elm.List.make(_elm),
+   $Maybe = Elm.Maybe.make(_elm),
+   $Result = Elm.Result.make(_elm),
+   $Signal = Elm.Signal.make(_elm);
+   var _op = {};
+   var config = {i18n: {dayShort: $Date$Extra$I18n$I_en_us.dayShort
+                       ,dayName: $Date$Extra$I18n$I_en_us.dayName
+                       ,monthShort: $Date$Extra$I18n$I_en_us.monthShort
+                       ,monthName: $Date$Extra$I18n$I_en_us.monthName}
+                ,format: {date: "%-m/%-d/%Y"
+                         ,longDate: "%A, %B %d, %Y"
+                         ,time: "%-H:%M %p"
+                         ,longTime: "%-H:%M:%S %p"
+                         ,dateTime: "%-m/%-d/%Y %-I:%M %p"
+                         ,firstDayOfWeek: $Date.Mon}};
+   return _elm.Date.Extra.Config.Config_en_us.values = {_op: _op,config: config};
+};
+Elm.Date = Elm.Date || {};
+Elm.Date.Extra = Elm.Date.Extra || {};
+Elm.Date.Extra.Period = Elm.Date.Extra.Period || {};
+Elm.Date.Extra.Period.make = function (_elm) {
+   "use strict";
+   _elm.Date = _elm.Date || {};
+   _elm.Date.Extra = _elm.Date.Extra || {};
+   _elm.Date.Extra.Period = _elm.Date.Extra.Period || {};
+   if (_elm.Date.Extra.Period.values) return _elm.Date.Extra.Period.values;
+   var _U = Elm.Native.Utils.make(_elm),
+   $Basics = Elm.Basics.make(_elm),
+   $Date = Elm.Date.make(_elm),
+   $Date$Extra$Core = Elm.Date.Extra.Core.make(_elm),
+   $Debug = Elm.Debug.make(_elm),
+   $List = Elm.List.make(_elm),
+   $Maybe = Elm.Maybe.make(_elm),
+   $Result = Elm.Result.make(_elm),
+   $Signal = Elm.Signal.make(_elm);
+   var _op = {};
+   var diff = F2(function (date1,date2) {
+      var millisecondDiff = $Date.millisecond(date1) - $Date.millisecond(date2);
+      var secondDiff = $Date.second(date1) - $Date.second(date2);
+      var minuteDiff = $Date.minute(date1) - $Date.minute(date2);
+      var hourDiff = $Date.hour(date1) - $Date.hour(date2);
+      var ticksDiff = $Date$Extra$Core.toTime(date1) - $Date$Extra$Core.toTime(date2);
+      var ticksDayDiff = ticksDiff - hourDiff * $Date$Extra$Core.ticksAnHour - minuteDiff * $Date$Extra$Core.ticksAMinute - secondDiff * $Date$Extra$Core.ticksASecond - millisecondDiff * $Date$Extra$Core.ticksAMillisecond;
+      var onlylDaysDiff = ticksDayDiff / $Date$Extra$Core.ticksADay | 0;
+      var _p0 = function () {
+         if (_U.cmp(onlylDaysDiff,0) < 0) {
+               var absDayDiff = $Basics.abs(onlylDaysDiff);
+               return {ctor: "_Tuple2",_0: $Basics.negate(absDayDiff / 7 | 0),_1: $Basics.negate(A2($Basics._op["%"],absDayDiff,7))};
+            } else return {ctor: "_Tuple2",_0: onlylDaysDiff / 7 | 0,_1: A2($Basics._op["%"],onlylDaysDiff,7)};
+      }();
+      var weekDiff = _p0._0;
+      var dayDiff = _p0._1;
+      return {week: weekDiff,day: dayDiff,hour: hourDiff,minute: minuteDiff,second: secondDiff,millisecond: millisecondDiff};
+   });
+   var addTimeUnit = F3(function (unit,addend,date) {
+      return $Date$Extra$Core.fromTime(A2(F2(function (x,y) {    return x + y;}),addend * unit,$Date$Extra$Core.toTime(date)));
+   });
+   var toTicks = function (period) {
+      var _p1 = period;
+      switch (_p1.ctor)
+      {case "Millisecond": return $Date$Extra$Core.ticksAMillisecond;
+         case "Second": return $Date$Extra$Core.ticksASecond;
+         case "Minute": return $Date$Extra$Core.ticksAMinute;
+         case "Hour": return $Date$Extra$Core.ticksAnHour;
+         case "Day": return $Date$Extra$Core.ticksADay;
+         case "Week": return $Date$Extra$Core.ticksAWeek;
+         default: var _p2 = _p1._0;
+           return $Date$Extra$Core.ticksAMillisecond * _p2.millisecond + $Date$Extra$Core.ticksASecond * _p2.second + $Date$Extra$Core.ticksAMinute * _p2.minute + $Date$Extra$Core.ticksAnHour * _p2.hour + $Date$Extra$Core.ticksADay * _p2.day + $Date$Extra$Core.ticksAWeek * _p2.week;}
+   };
+   var add = function (period) {    return addTimeUnit(toTicks(period));};
+   var zeroDelta = {week: 0,day: 0,hour: 0,minute: 0,second: 0,millisecond: 0};
+   var DeltaRecord = F6(function (a,b,c,d,e,f) {    return {week: a,day: b,hour: c,minute: d,second: e,millisecond: f};});
+   var Delta = function (a) {    return {ctor: "Delta",_0: a};};
+   var Week = {ctor: "Week"};
+   var Day = {ctor: "Day"};
+   var Hour = {ctor: "Hour"};
+   var Minute = {ctor: "Minute"};
+   var Second = {ctor: "Second"};
+   var Millisecond = {ctor: "Millisecond"};
+   return _elm.Date.Extra.Period.values = {_op: _op
+                                          ,add: add
+                                          ,diff: diff
+                                          ,toTicks: toTicks
+                                          ,zeroDelta: zeroDelta
+                                          ,DeltaRecord: DeltaRecord
+                                          ,Millisecond: Millisecond
+                                          ,Second: Second
+                                          ,Minute: Minute
+                                          ,Hour: Hour
+                                          ,Day: Day
+                                          ,Week: Week
+                                          ,Delta: Delta};
+};
+Elm.Date = Elm.Date || {};
+Elm.Date.Extra = Elm.Date.Extra || {};
+Elm.Date.Extra.Internal = Elm.Date.Extra.Internal || {};
+Elm.Date.Extra.Internal.make = function (_elm) {
+   "use strict";
+   _elm.Date = _elm.Date || {};
+   _elm.Date.Extra = _elm.Date.Extra || {};
+   _elm.Date.Extra.Internal = _elm.Date.Extra.Internal || {};
+   if (_elm.Date.Extra.Internal.values) return _elm.Date.Extra.Internal.values;
+   var _U = Elm.Native.Utils.make(_elm),
+   $Basics = Elm.Basics.make(_elm),
+   $Date = Elm.Date.make(_elm),
+   $Date$Extra$Core = Elm.Date.Extra.Core.make(_elm),
+   $Date$Extra$Period = Elm.Date.Extra.Period.make(_elm),
+   $Debug = Elm.Debug.make(_elm),
+   $List = Elm.List.make(_elm),
+   $Maybe = Elm.Maybe.make(_elm),
+   $Result = Elm.Result.make(_elm),
+   $Signal = Elm.Signal.make(_elm);
+   var _op = {};
+   var daysFromCivil = F3(function (year,month,day) {
+      var doy = ((153 * (month + (_U.cmp(month,2) > 0 ? -3 : 9)) + 2) / 5 | 0) + day - 1;
+      var y = year - (_U.cmp(month,2) < 1 ? 1 : 0);
+      var era = (_U.cmp(y,0) > -1 ? y : y - 399) / 400 | 0;
+      var yoe = y - era * 400;
+      var doe = yoe * 365 + (yoe / 4 | 0) - (yoe / 100 | 0) + doy;
+      return era * 146097 + doe - 719468;
+   });
+   var ticksFromFields = F7(function (year,month,day,hour,minute,second,millisecond) {
+      var monthInt = $Date$Extra$Core.monthToInt(month);
+      var c_year = _U.cmp(year,0) < 0 ? 0 : year;
+      var c_day = A3($Basics.clamp,1,A2($Date$Extra$Core.daysInMonth,c_year,month),day);
+      var dayCount = A3(daysFromCivil,c_year,monthInt,c_day);
+      return $Date$Extra$Period.toTicks($Date$Extra$Period.Delta({millisecond: A3($Basics.clamp,0,999,millisecond)
+                                                                 ,second: A3($Basics.clamp,0,59,second)
+                                                                 ,minute: A3($Basics.clamp,0,59,minute)
+                                                                 ,hour: A3($Basics.clamp,0,23,hour)
+                                                                 ,day: dayCount
+                                                                 ,week: 0}));
+   });
+   var ticksFromDateFields = function (date) {
+      return A7(ticksFromFields,
+      $Date.year(date),
+      $Date.month(date),
+      $Date.day(date),
+      $Date.hour(date),
+      $Date.minute(date),
+      $Date.second(date),
+      $Date.millisecond(date));
+   };
+   var getTimezoneOffset = function (date) {
+      var v1Ticks = ticksFromDateFields(date);
+      var dateTicks = $Basics.floor($Date.toTime(date));
+      return (dateTicks - v1Ticks) / $Date$Extra$Core.ticksAMinute | 0;
+   };
+   var hackDateAsOffset = F2(function (offsetMinutes,date) {
+      return $Date$Extra$Core.fromTime(A2(F2(function (x,y) {    return x + y;}),offsetMinutes * $Date$Extra$Core.ticksAMinute,$Date$Extra$Core.toTime(date)));
+   });
+   var hackDateAsUtc = function (date) {
+      var offset = getTimezoneOffset(date);
+      var oHours = offset / $Date$Extra$Core.ticksAnHour | 0;
+      var oMinutes = (offset - oHours * $Date$Extra$Core.ticksAnHour) / $Date$Extra$Core.ticksAMinute | 0;
+      var _p0 = A2($Debug.log,"hackDateAsUtc",{ctor: "_Tuple3",_0: offset,_1: oHours,_2: oMinutes});
+      var _p1 = A2($Debug.log,
+      "(local  date) fields",
+      {ctor: "_Tuple7"
+      ,_0: $Date.year(date)
+      ,_1: $Date.month(date)
+      ,_2: $Date.day(date)
+      ,_3: $Date.hour(date)
+      ,_4: $Date.minute(date)
+      ,_5: $Date.second(date)
+      ,_6: $Date.millisecond(date)});
+      return A2(hackDateAsOffset,offset,date);
+   };
+   return _elm.Date.Extra.Internal.values = {_op: _op
+                                            ,hackDateAsUtc: hackDateAsUtc
+                                            ,hackDateAsOffset: hackDateAsOffset
+                                            ,daysFromCivil: daysFromCivil
+                                            ,getTimezoneOffset: getTimezoneOffset
+                                            ,ticksFromDateFields: ticksFromDateFields
+                                            ,ticksFromFields: ticksFromFields};
+};
+Elm.Date = Elm.Date || {};
+Elm.Date.Extra = Elm.Date.Extra || {};
+Elm.Date.Extra.Create = Elm.Date.Extra.Create || {};
+Elm.Date.Extra.Create.make = function (_elm) {
+   "use strict";
+   _elm.Date = _elm.Date || {};
+   _elm.Date.Extra = _elm.Date.Extra || {};
+   _elm.Date.Extra.Create = _elm.Date.Extra.Create || {};
+   if (_elm.Date.Extra.Create.values) return _elm.Date.Extra.Create.values;
+   var _U = Elm.Native.Utils.make(_elm),
+   $Basics = Elm.Basics.make(_elm),
+   $Date = Elm.Date.make(_elm),
+   $Date$Extra$Core = Elm.Date.Extra.Core.make(_elm),
+   $Date$Extra$Internal = Elm.Date.Extra.Internal.make(_elm),
+   $Date$Extra$Period = Elm.Date.Extra.Period.make(_elm),
+   $Debug = Elm.Debug.make(_elm),
+   $List = Elm.List.make(_elm),
+   $Maybe = Elm.Maybe.make(_elm),
+   $Result = Elm.Result.make(_elm),
+   $Signal = Elm.Signal.make(_elm);
+   var _op = {};
+   var epochDate = $Date.fromTime(0);
+   var epochTimezoneOffset = function () {
+      var inMinutes = $Date.hour(epochDate) * 60 + $Date.minute(epochDate);
+      return _U.eq($Date.year(epochDate),1969) ? inMinutes - 24 * 60 : inMinutes;
+   }();
+   var adjustedTicksToDate = function (ticks) {
+      return A3($Date$Extra$Period.add,$Date$Extra$Period.Millisecond,ticks - epochTimezoneOffset * $Date$Extra$Core.ticksAMinute,epochDate);
+   };
+   var dateFromFields = F7(function (year,month,day,hour,minute,second,millisecond) {
+      return adjustedTicksToDate(A7($Date$Extra$Internal.ticksFromFields,year,month,day,hour,minute,second,millisecond));
+   });
+   var timeFromFields = A3(dateFromFields,1970,$Date.Jan,1);
+   var getTimezoneOffset = $Date$Extra$Internal.getTimezoneOffset;
+   return _elm.Date.Extra.Create.values = {_op: _op,getTimezoneOffset: getTimezoneOffset,dateFromFields: dateFromFields,timeFromFields: timeFromFields};
+};
+Elm.Date = Elm.Date || {};
+Elm.Date.Extra = Elm.Date.Extra || {};
+Elm.Date.Extra.Format = Elm.Date.Extra.Format || {};
+Elm.Date.Extra.Format.make = function (_elm) {
+   "use strict";
+   _elm.Date = _elm.Date || {};
+   _elm.Date.Extra = _elm.Date.Extra || {};
+   _elm.Date.Extra.Format = _elm.Date.Extra.Format || {};
+   if (_elm.Date.Extra.Format.values) return _elm.Date.Extra.Format.values;
+   var _U = Elm.Native.Utils.make(_elm),
+   $Basics = Elm.Basics.make(_elm),
+   $Date = Elm.Date.make(_elm),
+   $Date$Extra$Config = Elm.Date.Extra.Config.make(_elm),
+   $Date$Extra$Config$Config_en_us = Elm.Date.Extra.Config.Config_en_us.make(_elm),
+   $Date$Extra$Core = Elm.Date.Extra.Core.make(_elm),
+   $Date$Extra$Create = Elm.Date.Extra.Create.make(_elm),
+   $Date$Extra$Internal = Elm.Date.Extra.Internal.make(_elm),
+   $Debug = Elm.Debug.make(_elm),
+   $List = Elm.List.make(_elm),
+   $Maybe = Elm.Maybe.make(_elm),
+   $Regex = Elm.Regex.make(_elm),
+   $Result = Elm.Result.make(_elm),
+   $Signal = Elm.Signal.make(_elm),
+   $String = Elm.String.make(_elm);
+   var _op = {};
+   var toHourMin = function (offsetMinutes) {    return {ctor: "_Tuple2",_0: offsetMinutes / 60 | 0,_1: A2($Basics._op["%"],offsetMinutes,60)};};
+   var padWithN = F2(function (n,c) {    return function (_p0) {    return A3($String.padLeft,n,c,$Basics.toString(_p0));};});
+   var padWith = function (c) {    return function (_p1) {    return A3($String.padLeft,2,c,$Basics.toString(_p1));};};
+   var hourMod12 = function (h) {    return _U.eq(A2($Basics._op["%"],h,12),0) ? 12 : A2($Basics._op["%"],h,12);};
+   var formatOffsetStr = F2(function (betweenHoursMinutes,offset) {
+      var _p2 = toHourMin($Basics.abs(offset));
+      var hour = _p2._0;
+      var minute = _p2._1;
+      return A2($Basics._op["++"],
+      _U.cmp(offset,0) < 1 ? "+" : "-",
+      A2($Basics._op["++"],A2(padWith,_U.chr("0"),hour),A2($Basics._op["++"],betweenHoursMinutes,A2(padWith,_U.chr("0"),minute))));
+   });
+   var collapse = function (m) {    return A2($Maybe.andThen,m,$Basics.identity);};
+   var formatToken = F4(function (config,offset,d,m) {
+      var symbol = A2($Maybe.withDefault," ",collapse($List.head(m.submatches)));
+      var _p3 = symbol;
+      switch (_p3)
+      {case "Y": return A3(padWithN,4,_U.chr("0"),$Date.year(d));
+         case "m": return A2(padWith,_U.chr("0"),$Date$Extra$Core.monthToInt($Date.month(d)));
+         case "_m": return A2(padWith,_U.chr(" "),$Date$Extra$Core.monthToInt($Date.month(d)));
+         case "-m": return $Basics.toString($Date$Extra$Core.monthToInt($Date.month(d)));
+         case "B": return config.i18n.monthName($Date.month(d));
+         case "^B": return $String.toUpper(config.i18n.monthName($Date.month(d)));
+         case "b": return config.i18n.monthShort($Date.month(d));
+         case "^b": return $String.toUpper(config.i18n.monthShort($Date.month(d)));
+         case "d": return A2(padWith,_U.chr("0"),$Date.day(d));
+         case "-d": return $Basics.toString($Date.day(d));
+         case "e": return A2(padWith,_U.chr(" "),$Date.day(d));
+         case "A": return config.i18n.dayName($Date.dayOfWeek(d));
+         case "^A": return $String.toUpper(config.i18n.dayName($Date.dayOfWeek(d)));
+         case "a": return config.i18n.dayShort($Date.dayOfWeek(d));
+         case "^a": return $String.toUpper(config.i18n.dayShort($Date.dayOfWeek(d)));
+         case "H": return A2(padWith,_U.chr("0"),$Date.hour(d));
+         case "-H": return $Basics.toString($Date.hour(d));
+         case "k": return A2(padWith,_U.chr(" "),$Date.hour(d));
+         case "I": return A2(padWith,_U.chr("0"),hourMod12($Date.hour(d)));
+         case "-I": return $Basics.toString(hourMod12($Date.hour(d)));
+         case "l": return A2(padWith,_U.chr(" "),hourMod12($Date.hour(d)));
+         case "p": return _U.cmp($Date.hour(d),12) < 0 ? "AM" : "PM";
+         case "P": return _U.cmp($Date.hour(d),12) < 0 ? "am" : "pm";
+         case "M": return A2(padWith,_U.chr("0"),$Date.minute(d));
+         case "S": return A2(padWith,_U.chr("0"),$Date.second(d));
+         case "L": return A3(padWithN,3,_U.chr("0"),$Date.millisecond(d));
+         case "%": return symbol;
+         case "z": return A2(formatOffsetStr,"",offset);
+         case ":z": return A2(formatOffsetStr,":",offset);
+         default: return "";}
+   });
+   var formatRegex = $Regex.regex("%(Y|m|_m|-m|B|^B|b|^b|d|-d|e|A|^A|a|^a|H|-H|k|I|-I|l|p|P|M|S|%|L|z|:z)");
+   var formatOffset = F4(function (config,targetOffset,formatStr,date) {
+      var dateOffset = $Date$Extra$Create.getTimezoneOffset(date);
+      var hackOffset = dateOffset - targetOffset;
+      return A4($Regex.replace,$Regex.All,formatRegex,A3(formatToken,config,targetOffset,A2($Date$Extra$Internal.hackDateAsOffset,hackOffset,date)),formatStr);
+   });
+   var format = F3(function (config,formatStr,date) {    return A4(formatOffset,config,$Date$Extra$Create.getTimezoneOffset(date),formatStr,date);});
+   var formatUtc = F3(function (config,formatStr,date) {    return A4(formatOffset,config,0,formatStr,date);});
+   var isoDateString = function (date) {
+      var day = $Date.day(date);
+      var month = $Date.month(date);
+      var year = $Date.year(date);
+      return A2($Basics._op["++"],
+      A3($String.padLeft,4,_U.chr("0"),$Basics.toString(year)),
+      A2($Basics._op["++"],
+      "-",
+      A2($Basics._op["++"],
+      A3($String.padLeft,2,_U.chr("0"),$Basics.toString($Date$Extra$Core.monthToInt(month))),
+      A2($Basics._op["++"],"-",A3($String.padLeft,2,_U.chr("0"),$Basics.toString(day))))));
+   };
+   var utcIsoDateString = function (date) {    return isoDateString($Date$Extra$Internal.hackDateAsUtc(date));};
+   var yearInt = function (year) {    return A3($String.padLeft,4,_U.chr("0"),$Basics.toString(year));};
+   var year = function (date) {    return A3($String.padLeft,4,_U.chr("0"),$Basics.toString($Date.year(date)));};
+   var monthMonth = function (month) {    return A3($String.padLeft,2,_U.chr("0"),$Basics.toString($Date$Extra$Core.monthToInt(month)));};
+   var month = function (date) {    return A3($String.padLeft,2,_U.chr("0"),$Basics.toString($Date$Extra$Core.monthToInt($Date.month(date))));};
+   var isoTimeFormat = "%H:%M:%S";
+   var isoDateFormat = "%Y-%m-%d";
+   var isoMsecOffsetFormat = "%Y-%m-%dT%H:%M:%S.%L%z";
+   var isoString = A2(format,$Date$Extra$Config$Config_en_us.config,isoMsecOffsetFormat);
+   var isoOffsetFormat = "%Y-%m-%dT%H:%M:%S%z";
+   var isoMsecFormat = "%Y-%m-%dT%H:%M:%S.%L";
+   var isoStringNoOffset = A2(format,$Date$Extra$Config$Config_en_us.config,isoMsecFormat);
+   var utcIsoString = function (date) {    return A2($Basics._op["++"],A3(formatUtc,$Date$Extra$Config$Config_en_us.config,isoMsecFormat,date),"Z");};
+   var isoFormat = "%Y-%m-%dT%H:%M:%S";
+   return _elm.Date.Extra.Format.values = {_op: _op
+                                          ,format: format
+                                          ,formatUtc: formatUtc
+                                          ,formatOffset: formatOffset
+                                          ,isoString: isoString
+                                          ,isoStringNoOffset: isoStringNoOffset
+                                          ,utcIsoString: utcIsoString
+                                          ,isoDateString: isoDateString
+                                          ,utcIsoDateString: utcIsoDateString
+                                          ,isoFormat: isoFormat
+                                          ,isoMsecFormat: isoMsecFormat
+                                          ,isoOffsetFormat: isoOffsetFormat
+                                          ,isoMsecOffsetFormat: isoMsecOffsetFormat
+                                          ,isoDateFormat: isoDateFormat
+                                          ,isoTimeFormat: isoTimeFormat};
+};
+Elm.Date = Elm.Date || {};
+Elm.Date.Extra = Elm.Date.Extra || {};
+Elm.Date.Extra.Duration = Elm.Date.Extra.Duration || {};
+Elm.Date.Extra.Duration.make = function (_elm) {
+   "use strict";
+   _elm.Date = _elm.Date || {};
+   _elm.Date.Extra = _elm.Date.Extra || {};
+   _elm.Date.Extra.Duration = _elm.Date.Extra.Duration || {};
+   if (_elm.Date.Extra.Duration.values) return _elm.Date.Extra.Duration.values;
+   var _U = Elm.Native.Utils.make(_elm),
+   $Basics = Elm.Basics.make(_elm),
+   $Date = Elm.Date.make(_elm),
+   $Date$Extra$Core = Elm.Date.Extra.Core.make(_elm),
+   $Date$Extra$Create = Elm.Date.Extra.Create.make(_elm),
+   $Date$Extra$Internal = Elm.Date.Extra.Internal.make(_elm),
+   $Date$Extra$Period = Elm.Date.Extra.Period.make(_elm),
+   $Debug = Elm.Debug.make(_elm),
+   $List = Elm.List.make(_elm),
+   $Maybe = Elm.Maybe.make(_elm),
+   $Result = Elm.Result.make(_elm),
+   $Signal = Elm.Signal.make(_elm);
+   var _op = {};
+   var addMonth = F2(function (monthCount,date) {
+      var day = $Date.day(date);
+      var monthInt = $Date$Extra$Core.monthToInt($Date.month(date));
+      var newMonthInt = monthInt + monthCount;
+      var targetMonthInt = A2($Basics._op["%"],newMonthInt,12);
+      var yearOffset = _U.cmp(newMonthInt,0) < 0 ? (newMonthInt / 12 | 0) - 1 : newMonthInt / 12 | 0;
+      var year = $Date.year(date);
+      var inputCivil = A3($Date$Extra$Internal.daysFromCivil,year,monthInt,day);
+      var newYear = year + yearOffset;
+      var newDay = A2($Basics.min,A2($Date$Extra$Core.daysInMonth,newYear,$Date$Extra$Core.intToMonth(newMonthInt)),day);
+      var newCivil = A3($Date$Extra$Internal.daysFromCivil,newYear,targetMonthInt,newDay);
+      var daysDifferent = newCivil - inputCivil;
+      return A3($Date$Extra$Period.add,$Date$Extra$Period.Day,daysDifferent,date);
+   });
+   var addYear = F2(function (yearCount,date) {    return A2(addMonth,12 * yearCount,date);});
+   var daylightOffsetCompensate = F2(function (dateBefore,dateAfter) {
+      var offsetAfter = $Date$Extra$Create.getTimezoneOffset(dateAfter);
+      var offsetBefore = $Date$Extra$Create.getTimezoneOffset(dateBefore);
+      if (!_U.eq(offsetBefore,offsetAfter)) {
+            var adjustedDate = A3($Date$Extra$Period.add,$Date$Extra$Period.Millisecond,(offsetAfter - offsetBefore) * $Date$Extra$Core.ticksAMinute,dateAfter);
+            var adjustedOffset = $Date$Extra$Create.getTimezoneOffset(adjustedDate);
+            return !_U.eq(adjustedOffset,offsetAfter) ? dateAfter : adjustedDate;
+         } else return dateAfter;
+   });
+   var doAdd = function (duration) {
+      var _p0 = duration;
+      switch (_p0.ctor)
+      {case "Millisecond": return $Date$Extra$Period.add($Date$Extra$Period.Millisecond);
+         case "Second": return $Date$Extra$Period.add($Date$Extra$Period.Second);
+         case "Minute": return $Date$Extra$Period.add($Date$Extra$Period.Minute);
+         case "Hour": return $Date$Extra$Period.add($Date$Extra$Period.Hour);
+         case "Day": return $Date$Extra$Period.add($Date$Extra$Period.Day);
+         case "Week": return $Date$Extra$Period.add($Date$Extra$Period.Week);
+         case "Month": return addMonth;
+         default: return addYear;}
+   };
+   var requireDaylightCompensateInAdd = function (duration) {
+      var _p1 = duration;
+      switch (_p1.ctor)
+      {case "Millisecond": return false;
+         case "Second": return false;
+         case "Minute": return false;
+         case "Hour": return false;
+         case "Day": return true;
+         case "Week": return true;
+         case "Month": return true;
+         default: return true;}
+   };
+   var add = F3(function (duration,addend,date) {
+      var outputDate = A3(doAdd,duration,addend,date);
+      return requireDaylightCompensateInAdd(duration) ? A2(daylightOffsetCompensate,date,outputDate) : outputDate;
+   });
+   var Year = {ctor: "Year"};
+   var Month = {ctor: "Month"};
+   var Week = {ctor: "Week"};
+   var Day = {ctor: "Day"};
+   var Hour = {ctor: "Hour"};
+   var Minute = {ctor: "Minute"};
+   var Second = {ctor: "Second"};
+   var Millisecond = {ctor: "Millisecond"};
+   return _elm.Date.Extra.Duration.values = {_op: _op
+                                            ,add: add
+                                            ,Millisecond: Millisecond
+                                            ,Second: Second
+                                            ,Minute: Minute
+                                            ,Hour: Hour
+                                            ,Day: Day
+                                            ,Week: Week
+                                            ,Month: Month
+                                            ,Year: Year};
+};
+Elm.Date = Elm.Date || {};
+Elm.Date.Extra = Elm.Date.Extra || {};
+Elm.Date.Extra.Field = Elm.Date.Extra.Field || {};
+Elm.Date.Extra.Field.make = function (_elm) {
+   "use strict";
+   _elm.Date = _elm.Date || {};
+   _elm.Date.Extra = _elm.Date.Extra || {};
+   _elm.Date.Extra.Field = _elm.Date.Extra.Field || {};
+   if (_elm.Date.Extra.Field.values) return _elm.Date.Extra.Field.values;
+   var _U = Elm.Native.Utils.make(_elm),
+   $Basics = Elm.Basics.make(_elm),
+   $Date = Elm.Date.make(_elm),
+   $Date$Extra$Core = Elm.Date.Extra.Core.make(_elm),
+   $Date$Extra$Duration = Elm.Date.Extra.Duration.make(_elm),
+   $Debug = Elm.Debug.make(_elm),
+   $List = Elm.List.make(_elm),
+   $Maybe = Elm.Maybe.make(_elm),
+   $Result = Elm.Result.make(_elm),
+   $Signal = Elm.Signal.make(_elm);
+   var _op = {};
+   var dayOfWeekToDate = F3(function (newDayOfWeek,startOfWeekDay,date) {
+      var targetIsoDay = $Date$Extra$Core.isoDayOfWeek(newDayOfWeek);
+      var dayOfWeek = $Date.dayOfWeek(date);
+      var daysToStartOfWeek = A2($Date$Extra$Core.daysBackToStartOfWeek,dayOfWeek,startOfWeekDay);
+      var isoDay = $Date$Extra$Core.isoDayOfWeek(dayOfWeek);
+      var dayDiff = targetIsoDay - isoDay;
+      var adjustedDiff = _U.cmp(daysToStartOfWeek + dayDiff,0) < 0 ? dayDiff + 7 : dayDiff;
+      return A3($Date$Extra$Duration.add,$Date$Extra$Duration.Day,adjustedDiff,date);
+   });
+   var monthToDate = F2(function (month,date) {
+      var monthInt = $Date$Extra$Core.monthToInt($Date.month(date));
+      var targetMonthInt = $Date$Extra$Core.monthToInt(month);
+      return A3($Date$Extra$Duration.add,$Date$Extra$Duration.Month,targetMonthInt - monthInt,date);
+   });
+   var fieldToDateClamp = F2(function (field,date) {
+      var _p0 = field;
+      switch (_p0.ctor)
+      {case "Millisecond": return A3($Date$Extra$Duration.add,$Date$Extra$Duration.Millisecond,A3($Basics.clamp,0,999,_p0._0) - $Date.millisecond(date),date);
+         case "Second": return A3($Date$Extra$Duration.add,$Date$Extra$Duration.Second,A3($Basics.clamp,0,59,_p0._0) - $Date.second(date),date);
+         case "Minute": return A3($Date$Extra$Duration.add,$Date$Extra$Duration.Minute,A3($Basics.clamp,0,59,_p0._0) - $Date.minute(date),date);
+         case "Hour": return A3($Date$Extra$Duration.add,$Date$Extra$Duration.Hour,A3($Basics.clamp,0,23,_p0._0) - $Date.hour(date),date);
+         case "DayOfWeek": return A3(dayOfWeekToDate,_p0._0._0,_p0._0._1,date);
+         case "DayOfMonth": var maxDays = $Date$Extra$Core.daysInMonthDate(date);
+           return A3($Date$Extra$Duration.add,$Date$Extra$Duration.Day,A3($Basics.clamp,1,maxDays,_p0._0) - $Date.day(date),date);
+         case "Month": return A2(monthToDate,_p0._0,date);
+         default: var _p1 = _p0._0;
+           var minYear = _U.cmp(_p1,0) < 0 ? 0 : _p1;
+           return A3($Date$Extra$Duration.add,$Date$Extra$Duration.Year,minYear - $Date.year(date),date);}
+   });
+   var fieldToDate = F2(function (field,date) {
+      var _p2 = field;
+      switch (_p2.ctor)
+      {case "Millisecond": var _p3 = _p2._0;
+           return _U.cmp(_p3,0) < 0 || _U.cmp(_p3,999) > 0 ? $Maybe.Nothing : $Maybe.Just(A3($Date$Extra$Duration.add,
+           $Date$Extra$Duration.Millisecond,
+           _p3 - $Date.millisecond(date),
+           date));
+         case "Second": var _p4 = _p2._0;
+           return _U.cmp(_p4,0) < 0 || _U.cmp(_p4,59) > 0 ? $Maybe.Nothing : $Maybe.Just(A3($Date$Extra$Duration.add,
+           $Date$Extra$Duration.Second,
+           _p4 - $Date.second(date),
+           date));
+         case "Minute": var _p5 = _p2._0;
+           return _U.cmp(_p5,0) < 0 || _U.cmp(_p5,59) > 0 ? $Maybe.Nothing : $Maybe.Just(A3($Date$Extra$Duration.add,
+           $Date$Extra$Duration.Minute,
+           _p5 - $Date.minute(date),
+           date));
+         case "Hour": var _p6 = _p2._0;
+           return _U.cmp(_p6,0) < 0 || _U.cmp(_p6,23) > 0 ? $Maybe.Nothing : $Maybe.Just(A3($Date$Extra$Duration.add,
+           $Date$Extra$Duration.Hour,
+           _p6 - $Date.hour(date),
+           date));
+         case "DayOfWeek": return $Maybe.Just(A3(dayOfWeekToDate,_p2._0._0,_p2._0._1,date));
+         case "DayOfMonth": var _p7 = _p2._0;
+           var maxDays = $Date$Extra$Core.daysInMonthDate(date);
+           return _U.cmp(_p7,1) < 0 || _U.cmp(_p7,maxDays) > 0 ? $Maybe.Nothing : $Maybe.Just(A3($Date$Extra$Duration.add,
+           $Date$Extra$Duration.Day,
+           _p7 - $Date.day(date),
+           date));
+         case "Month": return $Maybe.Just(A2(monthToDate,_p2._0,date));
+         default: var _p8 = _p2._0;
+           return _U.cmp(_p8,0) < 0 ? $Maybe.Nothing : $Maybe.Just(A3($Date$Extra$Duration.add,$Date$Extra$Duration.Year,_p8 - $Date.year(date),date));}
+   });
+   var Year = function (a) {    return {ctor: "Year",_0: a};};
+   var Month = function (a) {    return {ctor: "Month",_0: a};};
+   var DayOfMonth = function (a) {    return {ctor: "DayOfMonth",_0: a};};
+   var DayOfWeek = function (a) {    return {ctor: "DayOfWeek",_0: a};};
+   var Hour = function (a) {    return {ctor: "Hour",_0: a};};
+   var Minute = function (a) {    return {ctor: "Minute",_0: a};};
+   var Second = function (a) {    return {ctor: "Second",_0: a};};
+   var Millisecond = function (a) {    return {ctor: "Millisecond",_0: a};};
+   return _elm.Date.Extra.Field.values = {_op: _op
+                                         ,fieldToDate: fieldToDate
+                                         ,fieldToDateClamp: fieldToDateClamp
+                                         ,Millisecond: Millisecond
+                                         ,Second: Second
+                                         ,Minute: Minute
+                                         ,Hour: Hour
+                                         ,DayOfWeek: DayOfWeek
+                                         ,DayOfMonth: DayOfMonth
+                                         ,Month: Month
+                                         ,Year: Year};
+};
+Elm.Date = Elm.Date || {};
+Elm.Date.Extra = Elm.Date.Extra || {};
+Elm.Date.Extra.Floor = Elm.Date.Extra.Floor || {};
+Elm.Date.Extra.Floor.make = function (_elm) {
+   "use strict";
+   _elm.Date = _elm.Date || {};
+   _elm.Date.Extra = _elm.Date.Extra || {};
+   _elm.Date.Extra.Floor = _elm.Date.Extra.Floor || {};
+   if (_elm.Date.Extra.Floor.values) return _elm.Date.Extra.Floor.values;
+   var _U = Elm.Native.Utils.make(_elm),
+   $Basics = Elm.Basics.make(_elm),
+   $Date = Elm.Date.make(_elm),
+   $Date$Extra$Core = Elm.Date.Extra.Core.make(_elm),
+   $Date$Extra$Field = Elm.Date.Extra.Field.make(_elm),
+   $Debug = Elm.Debug.make(_elm),
+   $List = Elm.List.make(_elm),
+   $Maybe = Elm.Maybe.make(_elm),
+   $Result = Elm.Result.make(_elm),
+   $Signal = Elm.Signal.make(_elm);
+   var _op = {};
+   var Year = {ctor: "Year"};
+   var Month = {ctor: "Month"};
+   var Day = {ctor: "Day"};
+   var Hour = {ctor: "Hour"};
+   var Minute = {ctor: "Minute"};
+   var Second = {ctor: "Second"};
+   var floor = F2(function (dateFloor,date) {
+      var _p0 = dateFloor;
+      switch (_p0.ctor)
+      {case "Millisecond": return date;
+         case "Second": return A2($Date$Extra$Field.fieldToDateClamp,$Date$Extra$Field.Millisecond(0),date);
+         case "Minute": return A2($Date$Extra$Field.fieldToDateClamp,$Date$Extra$Field.Second(0),A2(floor,Second,date));
+         case "Hour": return A2($Date$Extra$Field.fieldToDateClamp,$Date$Extra$Field.Minute(0),A2(floor,Minute,date));
+         case "Day": return A2($Date$Extra$Field.fieldToDateClamp,$Date$Extra$Field.Hour(0),A2(floor,Hour,date));
+         case "Month": return A2($Date$Extra$Field.fieldToDateClamp,$Date$Extra$Field.DayOfMonth(1),A2(floor,Day,date));
+         default: return floorYear(date);}
+   });
+   var floorYear = function (date) {
+      var startMonthDate = A2($Date$Extra$Field.fieldToDateClamp,$Date$Extra$Field.DayOfMonth(1),date);
+      var startYearDate = A2($Date$Extra$Field.fieldToDateClamp,$Date$Extra$Field.Month($Date.Jan),startMonthDate);
+      var monthTicks = $Date$Extra$Core.toTime(startMonthDate) - $Date$Extra$Core.toTime(startYearDate);
+      var updatedDate = $Date$Extra$Core.fromTime($Date$Extra$Core.toTime(date) - monthTicks);
+      return A2(floor,Month,updatedDate);
+   };
+   var Millisecond = {ctor: "Millisecond"};
+   return _elm.Date.Extra.Floor.values = {_op: _op
+                                         ,floor: floor
+                                         ,Millisecond: Millisecond
+                                         ,Second: Second
+                                         ,Minute: Minute
+                                         ,Hour: Hour
+                                         ,Day: Day
+                                         ,Month: Month
+                                         ,Year: Year};
+};
+Elm.Date = Elm.Date || {};
+Elm.Date.Extra = Elm.Date.Extra || {};
+Elm.Date.Extra.Utils = Elm.Date.Extra.Utils || {};
+Elm.Date.Extra.Utils.make = function (_elm) {
+   "use strict";
+   _elm.Date = _elm.Date || {};
+   _elm.Date.Extra = _elm.Date.Extra || {};
+   _elm.Date.Extra.Utils = _elm.Date.Extra.Utils || {};
+   if (_elm.Date.Extra.Utils.values) return _elm.Date.Extra.Utils.values;
+   var _U = Elm.Native.Utils.make(_elm),
+   $Basics = Elm.Basics.make(_elm),
+   $Date = Elm.Date.make(_elm),
+   $Date$Extra$Compare = Elm.Date.Extra.Compare.make(_elm),
+   $Date$Extra$Core = Elm.Date.Extra.Core.make(_elm),
+   $Date$Extra$Create = Elm.Date.Extra.Create.make(_elm),
+   $Date$Extra$Floor = Elm.Date.Extra.Floor.make(_elm),
+   $Date$Extra$Period = Elm.Date.Extra.Period.make(_elm),
+   $Debug = Elm.Debug.make(_elm),
+   $List = Elm.List.make(_elm),
+   $Maybe = Elm.Maybe.make(_elm),
+   $Result = Elm.Result.make(_elm),
+   $Signal = Elm.Signal.make(_elm);
+   var _op = {};
+   var unsafeFromString = function (dateStr) {
+      var _p0 = $Date.fromString(dateStr);
+      if (_p0.ctor === "Ok") {
+            return _p0._0;
+         } else {
+            return _U.crashCase("Date.Extra.Utils",{start: {line: 110,column: 3},end: {line: 112,column: 47}},_p0)("unsafeFromString");
+         }
+   };
+   var isoDayofWeekMonday = $Date$Extra$Core.isoDayOfWeek($Date.Mon);
+   var isoWeekOne = function (year) {
+      var date = A7($Date$Extra$Create.dateFromFields,year,$Date.Jan,4,0,0,0,0);
+      var isoDow = $Date$Extra$Core.isoDayOfWeek($Date.dayOfWeek(date));
+      return A3($Date$Extra$Period.add,$Date$Extra$Period.Day,isoDayofWeekMonday - isoDow,date);
+   };
+   var isoWeek = function (date) {
+      var dateAsDay = A2($Date$Extra$Floor.floor,$Date$Extra$Floor.Day,date);
+      var inputYear = $Date.year(date);
+      var endOfYearMaxIsoWeekDate = A7($Date$Extra$Create.dateFromFields,inputYear,$Date.Dec,29,0,0,0,0);
+      var _p2 = function () {
+         if (A3($Date$Extra$Compare.is,$Date$Extra$Compare.SameOrAfter,date,endOfYearMaxIsoWeekDate)) {
+               var nextYearIsoWeek1 = isoWeekOne(inputYear + 1);
+               return A3($Date$Extra$Compare.is,$Date$Extra$Compare.Before,date,nextYearIsoWeek1) ? {ctor: "_Tuple2"
+                                                                                                    ,_0: inputYear
+                                                                                                    ,_1: isoWeekOne(inputYear)} : {ctor: "_Tuple2"
+                                                                                                                                  ,_0: inputYear + 1
+                                                                                                                                  ,_1: nextYearIsoWeek1};
+            } else {
+               var thisYearIsoWeek1 = isoWeekOne(inputYear);
+               return A3($Date$Extra$Compare.is,$Date$Extra$Compare.Before,date,thisYearIsoWeek1) ? {ctor: "_Tuple2"
+                                                                                                    ,_0: inputYear - 1
+                                                                                                    ,_1: isoWeekOne(inputYear - 1)} : {ctor: "_Tuple2"
+                                                                                                                                      ,_0: inputYear
+                                                                                                                                      ,_1: thisYearIsoWeek1};
+            }
+      }();
+      var year = _p2._0;
+      var week1 = _p2._1;
+      var daysSinceWeek1 = ($Date$Extra$Core.toTime(dateAsDay) - $Date$Extra$Core.toTime(week1)) / $Date$Extra$Core.ticksADay | 0;
+      return {ctor: "_Tuple3",_0: year,_1: (daysSinceWeek1 / 7 | 0) + 1,_2: $Date$Extra$Core.isoDayOfWeek($Date.dayOfWeek(date))};
+   };
+   var dayList$ = F3(function (dayLength,date,list) {
+      dayList$: while (true) if (_U.eq(dayLength,0)) return list; else {
+            var _v1 = dayLength - 1,_v2 = A3($Date$Extra$Period.add,$Date$Extra$Period.Day,1,date),_v3 = A2($List._op["::"],date,list);
+            dayLength = _v1;
+            date = _v2;
+            list = _v3;
+            continue dayList$;
+         }
+   });
+   var dayList = F2(function (dayLength,startDate) {    return $List.reverse(A3(dayList$,dayLength,startDate,_U.list([])));});
+   return _elm.Date.Extra.Utils.values = {_op: _op,unsafeFromString: unsafeFromString,dayList: dayList,isoWeek: isoWeek,isoWeekOne: isoWeekOne};
+};
+Elm.Calendar = Elm.Calendar || {};
+Elm.Calendar.make = function (_elm) {
+   "use strict";
+   _elm.Calendar = _elm.Calendar || {};
+   if (_elm.Calendar.values) return _elm.Calendar.values;
+   var _U = Elm.Native.Utils.make(_elm),
+   $Basics = Elm.Basics.make(_elm),
+   $Date = Elm.Date.make(_elm),
+   $Date$Extra$Core = Elm.Date.Extra.Core.make(_elm),
+   $Date$Extra$Duration = Elm.Date.Extra.Duration.make(_elm),
+   $Date$Extra$Floor = Elm.Date.Extra.Floor.make(_elm),
+   $Date$Extra$I18n$I_en_us = Elm.Date.Extra.I18n.I_en_us.make(_elm),
+   $Date$Extra$Utils = Elm.Date.Extra.Utils.make(_elm),
+   $Debug = Elm.Debug.make(_elm),
+   $Html = Elm.Html.make(_elm),
+   $Html$Attributes = Elm.Html.Attributes.make(_elm),
+   $Html$Events = Elm.Html.Events.make(_elm),
+   $List = Elm.List.make(_elm),
+   $Maybe = Elm.Maybe.make(_elm),
+   $Result = Elm.Result.make(_elm),
+   $Signal = Elm.Signal.make(_elm);
+   var _op = {};
+   var firstWeekOfMonth = function (date) {
+      var dd = A2($Debug.log,"D",$Date.day(date));
+      var days = function () {
+         var weekDay = $Date.dayOfWeek($Date$Extra$Core.toFirstOfMonth(date));
+         return A2($Date$Extra$Core.daysBackToStartOfWeek,$Date.Sun,weekDay);
+      }();
+      return _U.range(1,days);
+   };
+   var lastWeekOfMonth = function (date) {
+      var daysInMonth = $Date$Extra$Core.daysInMonthDate(date);
+      var days = function () {
+         var weekDay = $Date.dayOfWeek($Date$Extra$Core.lastOfMonthDate(date));
+         return A2($Date$Extra$Core.daysBackToStartOfWeek,weekDay,$Date.Sun);
+      }();
+      return _U.range(daysInMonth - days,daysInMonth);
+   };
+   var viewDays = F2(function (days,isExternal) {
+      return A2($List.map,
+      $Html.td(_U.list([$Html$Attributes.classList(_U.list([{ctor: "_Tuple2",_0: "other-month",_1: isExternal}]))])),
+      A2($List.map,$List.repeat(1),A2($List.map,$Html.text,A2($List.map,$Basics.toString,days))));
+   });
+   var splitWeeks = function (days) {
+      if (_U.eq($List.length(days),0)) return _U.list([]); else {
+            var remainingDays = A2($List.drop,7,days);
+            var thisWeek = A2($List.repeat,1,A2($List.take,7,days));
+            return A2($List.append,thisWeek,splitWeeks(remainingDays));
+         }
+   };
+   var NextMonth = {ctor: "NextMonth"};
+   var PreviousMonth = {ctor: "PreviousMonth"};
+   var viewControls = F2(function (address,model) {
+      var year = $Basics.toString($Date.year(model.viewDate));
+      var month = $Date$Extra$I18n$I_en_us.monthName($Date.month(model.viewDate));
+      return A2($Html.div,
+      _U.list([]),
+      _U.list([A2($Html.button,_U.list([A2($Html$Events.onClick,address,PreviousMonth)]),_U.list([$Html.text("-")]))
+              ,A2($Html.div,_U.list([]),_U.list([$Html.text(A2($Basics._op["++"],month,A2($Basics._op["++"],", ",year)))]))
+              ,A2($Html.button,_U.list([A2($Html$Events.onClick,address,NextMonth)]),_U.list([$Html.text("+")]))]));
+   });
+   var nextMonth = function (date) {    return A3($Date$Extra$Duration.add,$Date$Extra$Duration.Month,1,date);};
+   var prevMonth = function (date) {    return A3($Date$Extra$Duration.add,$Date$Extra$Duration.Month,-1,date);};
+   var update = F2(function (action,model) {
+      var _p0 = action;
+      if (_p0.ctor === "PreviousMonth") {
+            return _U.update(model,{viewDate: A2($Date$Extra$Floor.floor,$Date$Extra$Floor.Month,prevMonth(model.viewDate))});
+         } else {
+            return _U.update(model,{viewDate: A2($Date$Extra$Floor.floor,$Date$Extra$Floor.Month,nextMonth(model.viewDate))});
+         }
+   });
+   var viewMonth = function (date) {
+      var nextDays = function () {    var days = firstWeekOfMonth(nextMonth(date));return _U.cmp($List.length(days),7) < 0 ? days : _U.list([]);}();
+      var currentDays = _U.range(1,$Date$Extra$Core.daysInMonthDate(date));
+      var previousDays = function () {    var days = lastWeekOfMonth(prevMonth(date));return _U.cmp($List.length(days),7) < 0 ? days : _U.list([]);}();
+      return A2($List.map,
+      $Html.tr(_U.list([])),
+      splitWeeks(A2($List.append,A2(viewDays,previousDays,true),A2($List.append,A2(viewDays,currentDays,false),A2(viewDays,nextDays,true)))));
    };
    var view = F2(function (address,model) {
-      return A2($Html.table,
+      var header = A2($Html.thead,
       _U.list([]),
-      _U.list([A2($Html.thead,
-              _U.list([]),
-              _U.list([A2($Html.tr,
-              _U.list([]),
-              _U.list([A2($Html.th,_U.list([]),_U.list([$Html.text("S")]))
-                      ,A2($Html.th,_U.list([]),_U.list([$Html.text("M")]))
-                      ,A2($Html.th,_U.list([]),_U.list([$Html.text("T")]))
-                      ,A2($Html.th,_U.list([]),_U.list([$Html.text("W")]))
-                      ,A2($Html.th,_U.list([]),_U.list([$Html.text("T")]))
-                      ,A2($Html.th,_U.list([]),_U.list([$Html.text("F")]))
-                      ,A2($Html.th,_U.list([]),_U.list([$Html.text("S")]))]))]))
-              ,layoutWeek($Date.fromTime(2.0e8))]));
+      A2($List.map,$Html.th(_U.list([])),A2($List.map,$List.repeat(1),A2($List.map,$Html.text,_U.list(["S","M","T","W","T","F","S"])))));
+      return A2($Html.div,
+      _U.list([]),
+      _U.list([A2(viewControls,address,model),A2($Html.table,_U.list([]),A2($List._op["::"],header,viewMonth(model.viewDate)))]));
    });
-   var update = F2(function (action,model) {    var _p0 = action;if (_p0.ctor === "Increment") {    return model + 1;} else {    return model - 1;}});
-   var Decrement = {ctor: "Decrement"};
-   var Increment = {ctor: "Increment"};
-   return _elm.Counter.values = {_op: _op
-                                ,Increment: Increment
-                                ,Decrement: Decrement
-                                ,update: update
-                                ,view: view
-                                ,secondsInWeek: secondsInWeek
-                                ,layoutWeek: layoutWeek
-                                ,layoutFirstWeek: layoutFirstWeek
-                                ,layoutLastWeek: layoutLastWeek
-                                ,createCalendarDay: createCalendarDay
-                                ,incrementByWeek: incrementByWeek
-                                ,countStyle: countStyle};
+   var emptyModel = {uid: 0,name: "",viewDate: $Date$Extra$Utils.unsafeFromString("August 1, 2016")};
+   var Model = F3(function (a,b,c) {    return {uid: a,name: b,viewDate: c};});
+   return _elm.Calendar.values = {_op: _op
+                                 ,Model: Model
+                                 ,emptyModel: emptyModel
+                                 ,prevMonth: prevMonth
+                                 ,nextMonth: nextMonth
+                                 ,PreviousMonth: PreviousMonth
+                                 ,NextMonth: NextMonth
+                                 ,update: update
+                                 ,view: view
+                                 ,viewControls: viewControls
+                                 ,splitWeeks: splitWeeks
+                                 ,viewDays: viewDays
+                                 ,viewMonth: viewMonth
+                                 ,lastWeekOfMonth: lastWeekOfMonth
+                                 ,firstWeekOfMonth: firstWeekOfMonth};
 };
 Elm.Main = Elm.Main || {};
 Elm.Main.make = function (_elm) {
@@ -10655,7 +11885,7 @@ Elm.Main.make = function (_elm) {
    if (_elm.Main.values) return _elm.Main.values;
    var _U = Elm.Native.Utils.make(_elm),
    $Basics = Elm.Basics.make(_elm),
-   $Counter = Elm.Counter.make(_elm),
+   $Calendar = Elm.Calendar.make(_elm),
    $Debug = Elm.Debug.make(_elm),
    $List = Elm.List.make(_elm),
    $Maybe = Elm.Maybe.make(_elm),
@@ -10663,6 +11893,6 @@ Elm.Main.make = function (_elm) {
    $Signal = Elm.Signal.make(_elm),
    $StartApp$Simple = Elm.StartApp.Simple.make(_elm);
    var _op = {};
-   var main = $StartApp$Simple.start({model: 0,update: $Counter.update,view: $Counter.view});
+   var main = $StartApp$Simple.start({model: $Calendar.emptyModel,update: $Calendar.update,view: $Calendar.view});
    return _elm.Main.values = {_op: _op,main: main};
 };

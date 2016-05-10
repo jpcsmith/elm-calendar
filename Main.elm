@@ -1,11 +1,10 @@
-
-import Counter exposing (update, view)
+import Calendar exposing (update, view, emptyModel)
 import StartApp.Simple exposing (start)
 
 
 main =
   start
-    { model = 0
+    { model = emptyModel
     , update = update
     , view = view
     }

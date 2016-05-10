@@ -1,0 +1,105 @@
+Elm.Calendar = Elm.Calendar || {};
+Elm.Calendar.make = function (_elm) {
+   "use strict";
+   _elm.Calendar = _elm.Calendar || {};
+   if (_elm.Calendar.values) return _elm.Calendar.values;
+   var _U = Elm.Native.Utils.make(_elm),
+   $Basics = Elm.Basics.make(_elm),
+   $Date = Elm.Date.make(_elm),
+   $Date$Extra$Core = Elm.Date.Extra.Core.make(_elm),
+   $Date$Extra$Duration = Elm.Date.Extra.Duration.make(_elm),
+   $Date$Extra$Floor = Elm.Date.Extra.Floor.make(_elm),
+   $Date$Extra$I18n$I_en_us = Elm.Date.Extra.I18n.I_en_us.make(_elm),
+   $Date$Extra$Utils = Elm.Date.Extra.Utils.make(_elm),
+   $Debug = Elm.Debug.make(_elm),
+   $Html = Elm.Html.make(_elm),
+   $Html$Attributes = Elm.Html.Attributes.make(_elm),
+   $Html$Events = Elm.Html.Events.make(_elm),
+   $List = Elm.List.make(_elm),
+   $Maybe = Elm.Maybe.make(_elm),
+   $Result = Elm.Result.make(_elm),
+   $Signal = Elm.Signal.make(_elm);
+   var _op = {};
+   var firstWeekOfMonth = function (date) {
+      var dd = A2($Debug.log,"D",$Date.day(date));
+      var days = function () {
+         var weekDay = $Date.dayOfWeek($Date$Extra$Core.toFirstOfMonth(date));
+         return A2($Date$Extra$Core.daysBackToStartOfWeek,$Date.Sun,weekDay);
+      }();
+      return _U.range(1,days);
+   };
+   var lastWeekOfMonth = function (date) {
+      var daysInMonth = $Date$Extra$Core.daysInMonthDate(date);
+      var days = function () {
+         var weekDay = $Date.dayOfWeek($Date$Extra$Core.lastOfMonthDate(date));
+         return A2($Date$Extra$Core.daysBackToStartOfWeek,weekDay,$Date.Sun);
+      }();
+      return _U.range(daysInMonth - days,daysInMonth);
+   };
+   var viewDays = F2(function (days,isExternal) {
+      return A2($List.map,
+      $Html.td(_U.list([$Html$Attributes.classList(_U.list([{ctor: "_Tuple2",_0: "other-month",_1: isExternal}]))])),
+      A2($List.map,$List.repeat(1),A2($List.map,$Html.text,A2($List.map,$Basics.toString,days))));
+   });
+   var splitWeeks = function (days) {
+      if (_U.eq($List.length(days),0)) return _U.list([]); else {
+            var remainingDays = A2($List.drop,7,days);
+            var thisWeek = A2($List.repeat,1,A2($List.take,7,days));
+            return A2($List.append,thisWeek,splitWeeks(remainingDays));
+         }
+   };
+   var NextMonth = {ctor: "NextMonth"};
+   var PreviousMonth = {ctor: "PreviousMonth"};
+   var viewControls = F2(function (address,model) {
+      var year = $Basics.toString($Date.year(model.viewDate));
+      var month = $Date$Extra$I18n$I_en_us.monthName($Date.month(model.viewDate));
+      return A2($Html.div,
+      _U.list([]),
+      _U.list([A2($Html.button,_U.list([A2($Html$Events.onClick,address,PreviousMonth)]),_U.list([$Html.text("-")]))
+              ,A2($Html.div,_U.list([]),_U.list([$Html.text(A2($Basics._op["++"],month,A2($Basics._op["++"],", ",year)))]))
+              ,A2($Html.button,_U.list([A2($Html$Events.onClick,address,NextMonth)]),_U.list([$Html.text("+")]))]));
+   });
+   var nextMonth = function (date) {    return A3($Date$Extra$Duration.add,$Date$Extra$Duration.Month,1,date);};
+   var prevMonth = function (date) {    return A3($Date$Extra$Duration.add,$Date$Extra$Duration.Month,-1,date);};
+   var update = F2(function (action,model) {
+      var _p0 = action;
+      if (_p0.ctor === "PreviousMonth") {
+            return _U.update(model,{viewDate: A2($Date$Extra$Floor.floor,$Date$Extra$Floor.Month,prevMonth(model.viewDate))});
+         } else {
+            return _U.update(model,{viewDate: A2($Date$Extra$Floor.floor,$Date$Extra$Floor.Month,nextMonth(model.viewDate))});
+         }
+   });
+   var viewMonth = function (date) {
+      var nextDays = function () {    var days = firstWeekOfMonth(nextMonth(date));return _U.cmp($List.length(days),7) < 0 ? days : _U.list([]);}();
+      var currentDays = _U.range(1,$Date$Extra$Core.daysInMonthDate(date));
+      var previousDays = function () {    var days = lastWeekOfMonth(prevMonth(date));return _U.cmp($List.length(days),7) < 0 ? days : _U.list([]);}();
+      return A2($List.map,
+      $Html.tr(_U.list([])),
+      splitWeeks(A2($List.append,A2(viewDays,previousDays,true),A2($List.append,A2(viewDays,currentDays,false),A2(viewDays,nextDays,true)))));
+   };
+   var view = F2(function (address,model) {
+      var header = A2($Html.thead,
+      _U.list([]),
+      A2($List.map,$Html.th(_U.list([])),A2($List.map,$List.repeat(1),A2($List.map,$Html.text,_U.list(["S","M","T","W","T","F","S"])))));
+      return A2($Html.div,
+      _U.list([]),
+      _U.list([A2(viewControls,address,model),A2($Html.table,_U.list([]),A2($List._op["::"],header,viewMonth(model.viewDate)))]));
+   });
+   var emptyModel = {uid: 0,name: "",viewDate: $Date$Extra$Utils.unsafeFromString("August 1, 2016")};
+   var Model = F3(function (a,b,c) {    return {uid: a,name: b,viewDate: c};});
+   return _elm.Calendar.values = {_op: _op
+                                 ,Model: Model
+                                 ,emptyModel: emptyModel
+                                 ,prevMonth: prevMonth
+                                 ,nextMonth: nextMonth
+                                 ,PreviousMonth: PreviousMonth
+                                 ,NextMonth: NextMonth
+                                 ,update: update
+                                 ,view: view
+                                 ,viewControls: viewControls
+                                 ,splitWeeks: splitWeeks
+                                 ,viewDays: viewDays
+                                 ,viewMonth: viewMonth
+                                 ,lastWeekOfMonth: lastWeekOfMonth
+                                 ,firstWeekOfMonth: firstWeekOfMonth};
+};
