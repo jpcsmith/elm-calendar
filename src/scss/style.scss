@@ -65,6 +65,22 @@ main {
   
   .body {
     margin: 8px;
+
+    button {
+      background: none;
+      border: 0;
+      cursor: pointer;
+      font-size: inherit;
+      padding: 0;
+    }
+
+    button:disabled {
+      cursor: auto;
+    }
+  }
+
+  .today button {
+    color: $accent-color;
   }
 
   .other-month { opacity: .4; }
@@ -73,8 +89,10 @@ main {
   th { 
     font-weight: normal; 
     padding: 10px; 
+    text-align: center;
   }
 
   .header,
   thead { color: $accent-color; }
 }
+

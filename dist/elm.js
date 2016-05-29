@@ -9178,54 +9178,6 @@ var _user$project$Calendar$lastWeekOfMonth = function (date) {
 	}();
 	return _elm_lang$core$Native_List.range(daysInMonth - days, daysInMonth);
 };
-var _user$project$Calendar$viewDays = F4(
-	function (days, viewedMonth, today, isExternal) {
-		return A2(
-			_elm_lang$core$List$map,
-			_elm_lang$html$Html$td(
-				_elm_lang$core$Native_List.fromArray(
-					[
-						_elm_lang$html$Html_Attributes$classList(
-						_elm_lang$core$Native_List.fromArray(
-							[
-								{ctor: '_Tuple2', _0: 'other-month', _1: isExternal}
-							]))
-					])),
-			A2(
-				_elm_lang$core$List$map,
-				_elm_lang$core$List$repeat(1),
-				A2(
-					_elm_lang$core$List$map,
-					_elm_lang$html$Html$text,
-					A2(_elm_lang$core$List$map, _elm_lang$core$Basics$toString, days))));
-	});
-var _user$project$Calendar$viewDay = F3(
-	function (isExternal, today, dayDate) {
-		var isToday = _elm_lang$core$Native_Utils.eq(today.day, dayDate.day) && _elm_lang$core$Native_Utils.eq(today.month, dayDate.month);
-		return A2(
-			_elm_lang$html$Html$td,
-			_elm_lang$core$Native_List.fromArray(
-				[
-					_elm_lang$html$Html_Attributes$classList(
-					_elm_lang$core$Native_List.fromArray(
-						[
-							{ctor: '_Tuple2', _0: 'other-month', _1: isExternal},
-							{ctor: '_Tuple2', _0: 'today', _1: isToday}
-						]))
-				]),
-			A2(
-				_elm_lang$core$List$repeat,
-				1,
-				A2(
-					_elm_lang$html$Html$button,
-					_elm_lang$core$Native_List.fromArray(
-						[]),
-					A2(
-						_elm_lang$core$List$repeat,
-						1,
-						_elm_lang$html$Html$text(
-							_elm_lang$core$Basics$toString(dayDate.day))))));
-	});
 var _user$project$Calendar$splitWeeks = function (days) {
 	if (_elm_lang$core$Native_Utils.eq(
 		_elm_lang$core$List$length(days),
@@ -9244,8 +9196,136 @@ var _user$project$Calendar$splitWeeks = function (days) {
 			_user$project$Calendar$splitWeeks(remainingDays));
 	}
 };
-var _user$project$Calendar$viewMonth = F2(
-	function (today, date) {
+var _user$project$Calendar$update = F2(
+	function (msg, model) {
+		var _p0 = msg;
+		switch (_p0.ctor) {
+			case 'PreviousMonth':
+				return _elm_lang$core$Native_Utils.update(
+					model,
+					{
+						viewDate: A2(
+							_rluiten$elm_date_extra$Date_Extra_Floor$floor,
+							_rluiten$elm_date_extra$Date_Extra_Floor$Month,
+							_user$project$Calendar$prevMonth(model.viewDate))
+					});
+			case 'NextMonth':
+				return _elm_lang$core$Native_Utils.update(
+					model,
+					{
+						viewDate: A2(
+							_rluiten$elm_date_extra$Date_Extra_Floor$floor,
+							_rluiten$elm_date_extra$Date_Extra_Floor$Month,
+							_user$project$Calendar$nextMonth(model.viewDate))
+					});
+			default:
+				var _p1 = _p0._0;
+				return _elm_lang$core$Native_Utils.update(
+					model,
+					{
+						completedDays: function () {
+							var equalToDay = A2(_rluiten$elm_date_extra$Date_Extra_Compare$is, _rluiten$elm_date_extra$Date_Extra_Compare$Same, _p1);
+							return A2(_elm_lang$core$List$any, equalToDay, model.completedDays) ? A2(
+								_elm_lang$core$List$filter,
+								function (other) {
+									return _elm_lang$core$Basics$not(
+										equalToDay(other));
+								},
+								model.completedDays) : A2(_elm_lang$core$List_ops['::'], _p1, model.completedDays);
+						}()
+					});
+		}
+	});
+var _user$project$Calendar$emptyModel = {
+	uid: 0,
+	name: 'Exercise',
+	today: _rluiten$elm_date_extra$Date_Extra_Utils$unsafeFromString('August 26, 2016'),
+	viewDate: _rluiten$elm_date_extra$Date_Extra_Utils$unsafeFromString('August 1, 2016'),
+	image: 'images/baby-pushup-16-9.jpg',
+	completedDays: _elm_lang$core$Native_List.fromArray(
+		[])
+};
+var _user$project$Calendar$Model = F6(
+	function (a, b, c, d, e, f) {
+		return {uid: a, name: b, today: c, viewDate: d, image: e, completedDays: f};
+	});
+var _user$project$Calendar$Toggle = function (a) {
+	return {ctor: 'Toggle', _0: a};
+};
+var _user$project$Calendar$viewDay = F5(
+	function (model, isExternal, today, viewedMonth, day) {
+		var viewedDay = A2(
+			_rluiten$elm_date_extra$Date_Extra_Floor$floor,
+			_rluiten$elm_date_extra$Date_Extra_Floor$Day,
+			A2(
+				_rluiten$elm_date_extra$Date_Extra_Field$fieldToDateClamp,
+				_rluiten$elm_date_extra$Date_Extra_Field$DayOfMonth(day),
+				viewedMonth));
+		var today = A2(_rluiten$elm_date_extra$Date_Extra_Floor$floor, _rluiten$elm_date_extra$Date_Extra_Floor$Day, today);
+		var isToday = A2(
+			F2(
+				function (x, y) {
+					return x && y;
+				}),
+			_elm_lang$core$Native_Utils.eq(
+				_elm_lang$core$Date$year(today),
+				_elm_lang$core$Date$year(viewedMonth)),
+			A2(
+				F2(
+					function (x, y) {
+						return x && y;
+					}),
+				_elm_lang$core$Native_Utils.eq(
+					_elm_lang$core$Date$day(today),
+					day),
+				_elm_lang$core$Native_Utils.eq(
+					_elm_lang$core$Date$month(today),
+					_elm_lang$core$Date$month(viewedMonth))));
+		return A2(
+			_elm_lang$html$Html$td,
+			_elm_lang$core$Native_List.fromArray(
+				[
+					_elm_lang$html$Html_Attributes$classList(
+					_elm_lang$core$Native_List.fromArray(
+						[
+							{ctor: '_Tuple2', _0: 'other-month', _1: isExternal},
+							{
+							ctor: '_Tuple2',
+							_0: 'today',
+							_1: A3(_rluiten$elm_date_extra$Date_Extra_Compare$is, _rluiten$elm_date_extra$Date_Extra_Compare$Same, today, viewedDay)
+						}
+						]))
+				]),
+			A2(
+				_elm_lang$core$List$repeat,
+				1,
+				A2(
+					_elm_lang$html$Html$button,
+					_elm_lang$core$Native_List.fromArray(
+						[
+							_elm_lang$html$Html_Attributes$disabled(
+							A3(_rluiten$elm_date_extra$Date_Extra_Compare$is, _rluiten$elm_date_extra$Date_Extra_Compare$After, viewedDay, today)),
+							_elm_lang$html$Html_Events$onClick(
+							_user$project$Calendar$Toggle(viewedDay))
+						]),
+					A2(
+						_elm_lang$core$List$repeat,
+						1,
+						_elm_lang$html$Html$text(
+							A2(
+								_elm_lang$core$List$any,
+								A2(_rluiten$elm_date_extra$Date_Extra_Compare$is, _rluiten$elm_date_extra$Date_Extra_Compare$Same, viewedDay),
+								model.completedDays) ? '✔' : _elm_lang$core$Basics$toString(day))))));
+	});
+var _user$project$Calendar$viewDays = F5(
+	function (model, days, viewedMonth, today, isExternal) {
+		return A2(
+			_elm_lang$core$List$map,
+			A4(_user$project$Calendar$viewDay, model, isExternal, today, viewedMonth),
+			days);
+	});
+var _user$project$Calendar$viewMonth = F3(
+	function (model, today, date) {
 		var nextDays = function () {
 			var days = _user$project$Calendar$firstWeekOfMonth(
 				_user$project$Calendar$nextMonth(date));
@@ -9273,55 +9353,23 @@ var _user$project$Calendar$viewMonth = F2(
 			_user$project$Calendar$splitWeeks(
 				A2(
 					_elm_lang$core$List$append,
-					A4(
+					A5(
 						_user$project$Calendar$viewDays,
+						model,
 						previousDays,
 						_user$project$Calendar$prevMonth(date),
 						today,
 						true),
 					A2(
 						_elm_lang$core$List$append,
-						A4(_user$project$Calendar$viewDays, currentDays, date, today, false),
-						A4(
+						A5(_user$project$Calendar$viewDays, model, currentDays, date, today, false),
+						A5(
 							_user$project$Calendar$viewDays,
+							model,
 							nextDays,
 							_user$project$Calendar$nextMonth(date),
 							today,
 							true)))));
-	});
-var _user$project$Calendar$update = F2(
-	function (msg, model) {
-		var _p0 = msg;
-		if (_p0.ctor === 'PreviousMonth') {
-			return _elm_lang$core$Native_Utils.update(
-				model,
-				{
-					viewDate: A2(
-						_rluiten$elm_date_extra$Date_Extra_Floor$floor,
-						_rluiten$elm_date_extra$Date_Extra_Floor$Month,
-						_user$project$Calendar$prevMonth(model.viewDate))
-				});
-		} else {
-			return _elm_lang$core$Native_Utils.update(
-				model,
-				{
-					viewDate: A2(
-						_rluiten$elm_date_extra$Date_Extra_Floor$floor,
-						_rluiten$elm_date_extra$Date_Extra_Floor$Month,
-						_user$project$Calendar$nextMonth(model.viewDate))
-				});
-		}
-	});
-var _user$project$Calendar$emptyModel = {
-	uid: 0,
-	name: 'Exercise',
-	today: _rluiten$elm_date_extra$Date_Extra_Utils$unsafeFromString('August 1, 2016'),
-	viewDate: _rluiten$elm_date_extra$Date_Extra_Utils$unsafeFromString('August 1, 2016'),
-	image: 'images/baby-pushup-16-9.jpg'
-};
-var _user$project$Calendar$Model = F5(
-	function (a, b, c, d, e) {
-		return {uid: a, name: b, today: c, viewDate: d, image: e};
 	});
 var _user$project$Calendar$NextMonth = {ctor: 'NextMonth'};
 var _user$project$Calendar$PreviousMonth = {ctor: 'PreviousMonth'};
@@ -9441,7 +9489,7 @@ var _user$project$Calendar$view = function (model) {
 						A2(
 							_elm_lang$core$List_ops['::'],
 							header,
-							A2(_user$project$Calendar$viewMonth, model.today, model.viewDate)))
+							A3(_user$project$Calendar$viewMonth, model, model.today, model.viewDate)))
 					]))
 			]));
 };
