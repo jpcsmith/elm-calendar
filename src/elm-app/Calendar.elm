@@ -1,4 +1,4 @@
-module Calendar where 
+module Calendar exposing (..)
 
 import List 
 import Date exposing (Date)
@@ -10,44 +10,49 @@ import Date.Extra.Utils as DateUtils
 import Date.Extra.Duration as DateDuration
 
 import Html exposing (..)
-import Html.Attributes exposing (style, classList)
+import Html.App as App
+import Html.Events exposing (..)
+import Json.Decode as Json
+import String
+import Html.Attributes exposing (style, classList, class, src)
 import Html.Events exposing (onClick)
 
+
+
+main =
+  App.beginnerProgram
+    { model = emptyModel
+    , view = view
+    , update = update
+    }
 
 -- MODEL
 
 type alias Model =
   { uid : Int
   , name : String
+  , today: Date
   , viewDate: Date
+  , image: String
   }
 
 emptyModel : Model
 emptyModel = 
   { uid = 0
-  , name = ""
+  , name = "Exercise"
+  , today = DateUtils.unsafeFromString "August 1, 2016"
   , viewDate = DateUtils.unsafeFromString "August 1, 2016"
+  , image = "images/baby-pushup-16-9.jpg" 
   }
-
-
-prevMonth : Date -> Date
-prevMonth date =
-  DateDuration.add DateDuration.Month -1 date
-
-
-nextMonth : Date -> Date
-nextMonth date =
-  DateDuration.add DateDuration.Month 1 date
-
 
 
 -- UPDATE
 
-type Action = PreviousMonth | NextMonth
+type Msg = PreviousMonth | NextMonth
 
-update : Action -> Model -> Model
-update action model =
-  case action of
+update : Msg -> Model -> Model
+update msg model =
+  case msg of
     PreviousMonth ->
       { model | viewDate = 
         prevMonth model.viewDate
@@ -60,10 +65,9 @@ update action model =
           |> DateFloor.floor DateFloor.Month
       }
 
--- VIEW
 
-view : Signal.Address Action -> Model -> Html
-view address model =
+view : Model -> Html Msg
+view model =
   let
     header = 
       List.map text [ "S", "M", "T", "W", "T", "F", "S" ]
@@ -71,28 +75,34 @@ view address model =
         |> List.map (th [])
         |> thead []
   in 
-    div [] 
-      [ viewControls address model
-      , table [] (header :: viewMonth model.viewDate)
+    section [ class "card" ]
+      [ div [ class "media" ] 
+        [ img [ src model.image ] [] 
+        , h2 [ class "title" ] [ text model.name ]
+        ]
+      , viewControls model
+      , div [ class "body" ]
+        [ table [] (header :: viewMonth model.today model.viewDate) ]
       ]
 
 
-viewControls : Signal.Address Action -> Model -> Html
-viewControls address model =
+viewControls : Model -> Html Msg
+viewControls model =
   let
     month = Date.month model.viewDate |> monthName
     year = Date.year model.viewDate |> toString
   in
-    div []
-      [ button [ onClick address PreviousMonth ] [ text "-" ]
+    nav [ class "header" ]
+      [ button [ onClick PreviousMonth ] [ text "‹" ]
       , div [] [ month ++ ", " ++ year |> text  ]
-      , button [ onClick address NextMonth ] [ text "+" ]
+      , button [ onClick NextMonth ] [ text "›" ]
       ]
 
 
+
 {-| Splits a list of `td` into 7 day blocks. The length of the input list
-should be a multiple of 7. -}
-splitWeeks: List Html -> List (List Html)
+should be a multiple of 7. ✔-}
+splitWeeks: List (Html Msg) -> List (List (Html Msg))
 splitWeeks days =
   if List.length days == 0 then []
   else
@@ -103,10 +113,24 @@ splitWeeks days =
       List.append thisWeek (splitWeeks remainingDays)
 
 
+viewDay : Bool -> Date -> Date -> Html Msg
+viewDay isExternal today dayDate =
+  let
+    isToday = 
+      today.day == dayDate.day && today.month == dayDate.month
+  in
+    toString dayDate.day
+      |> text
+      |> List.repeat 1
+      |> button []
+      |> List.repeat 1
+      |> td [ classList [ ("other-month", isExternal), ("today", isToday) ] ]
+
+
 {-| Craft the Html for a list of days. The class `other-month` is attached if
 the `isExternal` is True. -}
-viewDays : List Int -> Bool -> List Html
-viewDays days isExternal =
+viewDays : List Int -> Date -> Date -> Bool -> List (Html Msg)
+viewDays days viewedMonth today isExternal =
   List.map toString days
     |> List.map text
     |> List.map (List.repeat 1)
@@ -114,8 +138,8 @@ viewDays days isExternal =
 
 
 {-| Craft the Html for a month. -}
-viewMonth : Date -> List Html
-viewMonth date = 
+viewMonth : Date -> Date -> List (Html Msg)
+viewMonth today date = 
   let
     previousDays = 
       let days = lastWeekOfMonth (prevMonth date)
@@ -125,9 +149,9 @@ viewMonth date =
       let days = firstWeekOfMonth (nextMonth date)
       in if List.length days < 7 then days else []
   in
-    viewDays nextDays True
-      |> List.append (viewDays currentDays False)
-      |> List.append (viewDays previousDays True)
+    viewDays nextDays (nextMonth date) today True
+      |> List.append (viewDays currentDays date today False)
+      |> List.append (viewDays previousDays (prevMonth date) today True)
       |> splitWeeks
       |> List.map (tr [])
 
@@ -156,3 +180,13 @@ firstWeekOfMonth date =
     dd = Debug.log "D" (Date.day date)
   in
     [1..days]
+
+
+prevMonth : Date -> Date
+prevMonth date =
+  DateDuration.add DateDuration.Month -1 date
+
+
+nextMonth : Date -> Date
+nextMonth date =
+  DateDuration.add DateDuration.Month 1 date

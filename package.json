@@ -1,0 +1,35 @@
+{
+  "name": "elm-calendar",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.html",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build:elm": "elm make src/elm-app/Calendar.elm --output=dist/elm.js",
+    "watch:elm": "onchange 'src/elm-app/*.elm' -- npm run build:elm",
+    "scss": "node-sass --output-style nested --indent-type tab --indent-width 4 -o dist/ src/scss",
+    "autoprefixer": "postcss -u autoprefixer -r dist/*.css",
+    "build:css": "npm run scss && npm run autoprefixer",
+    "watch:css": "onchange 'src/scss/*.scss' -- npm run build:css",
+    "start": "npm run build:css && npm run build:elm && concurrently \"npm run watch:css\" \"npm run watch:elm\" \"npm run serve\" ",
+    "serve": "cd dist && browser-sync start --server --files \"../dist/*\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jpcsmith/elm-calendar.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jpcsmith/elm-calendar/issues"
+  },
+  "homepage": "https://github.com/jpcsmith/elm-calendar#readme",
+  "devDependencies": {
+    "autoprefixer": "^6.3.6",
+    "browser-sync": "^2.12.10",
+    "concurrently": "^2.0.0",
+    "node-sass": "^3.7.0",
+    "onchange": "^2.4.0",
+    "postcss-cli": "^2.5.2"
+  }
+}

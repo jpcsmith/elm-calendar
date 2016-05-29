@@ -1,0 +1,80 @@
+@import url(https://fonts.googleapis.com/css?family=Roboto:400,500,700);
+
+$font: 'Roboto', sans-serif;
+$text-color: rgb(33, 33, 33);
+$accent-color: #2196f3;
+$background-color: #fafafa;
+$foregound-color: #fff;
+
+html,
+body {
+  background-color: $background-color;
+}
+
+
+main {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  margin: 20px;
+}
+
+.card {
+  background-color: $foregound-color;
+  border-radius: 2px;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, .16), 0 3px 6px rgba(0, 0, 0, .23);
+  color: $text-color;
+  font-family: $font;
+  margin: auto;
+
+  .media { 
+    max-width: 298px;
+    position: relative;
+
+    img { 
+      width: 100%; 
+    }
+
+    .title {
+      bottom: 0;
+      color: $foregound-color;
+      font-size: xx-large;
+      font-weight: normal;
+      left: 0;
+      margin: 0;
+      padding: 24px 16px 16px;
+      position: absolute;
+    }
+  }
+
+  .header {
+    align-items: center;
+    display: flex;
+    flex-flow: row nowrap;
+    justify-content: space-between;
+    margin: 8px;
+
+    button {
+      background: None;
+      border: 0;
+      color: $accent-color;
+      font-size: larger;
+      padding: 10px 18px;
+    }
+  }
+  
+  .body {
+    margin: 8px;
+  }
+
+  .other-month { opacity: .4; }
+
+  td,
+  th { 
+    font-weight: normal; 
+    padding: 10px; 
+  }
+
+  .header,
+  thead { color: $accent-color; }
+}
